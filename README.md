@@ -3,9 +3,9 @@ A versão atual consegue apenas criar uma imagem FAT32, porem essa imagem ainda 
 <br>
 <br>
 
-<b> Coisas a fazer </b>
+<b> Coisas a fazer </b> <br>
 
-- [X] Escrever e criar arquivos na imagem <br>
+- [ ] Escrever e criar arquivos na imagem <br>
 - [ ] Verificar sobre little-endians <br>
 - [ ] Programar um simulador de terminar para acessar a imagem <br>
 - [ ] Criar a parte do File System information ( Setor 2 ) <br>
