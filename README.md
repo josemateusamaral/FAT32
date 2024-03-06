@@ -1,6 +1,6 @@
 <br>
-  A versão atual consegue apenas criar uma imagem FAT32, porem essa imagem ainda não foi completamente testada.<br>
-  Para testar o programara é só rodar o comando <b>sh run.sh</b> que então o programa será compilado e rodado se tiver conseguido compilar corretamente. 
+    A versão atual consegue apenas criar uma imagem FAT32, porem essa imagem ainda não foi completamente testada.<br>
+    Para testar o programara é só rodar o comando <b>sh run.sh</b> que então o programa será compilado e rodado se tiver conseguido compilar corretamente. 
 <br><br><br>
 
 <b> Coisas a fazer </b> <br>
