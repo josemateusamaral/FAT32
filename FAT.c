@@ -18,6 +18,29 @@ unsigned char* genSetorVazio( int tamanhoSetores ) {
     return setor;
 }
 
+
+/*
+    Esta função serva para testar as structs e ver se estão sendo gravados do jeito certo.
+    Estruturas testadas: 
+        entradaFAT -            tamanho 32bytes  - OK
+        blocoParametrosBios -   tamanho 512bytes - OK
+        setorInformacoesFS  -   tamanho 512bytes - OK
+
+        OBS: 512 decimal == 200 hexadecimal
+
+*/
+void testarStruct(){
+    /* 
+        Abrir o buffer para criar o arquivo de imagem do FAT32 
+    */
+    FILE *file = fopen("FAT.img","wb");
+    struct setorInformacoesFS entrada;
+    fwrite(&entrada,sizeof(struct setorInformacoesFS),1,file);
+    fclose(file);
+
+}
+
+
 void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters, int quantidadeSetoresPorCluster){
     
     /*
@@ -98,6 +121,7 @@ int main() {
 
     // criar imagem de disco FAT32
     criarDisco("FAT.img",512,10,1);
+    //testarStruct();
 
     return 0;
 }

@@ -43,13 +43,13 @@ struct blocoParametrosBios{
                                             // Sector offset	BPB offset	Field length	Description
     unsigned short setoresPorTrack;         // 0x018	        0x0D	    WORD	        Physical sectors per track (identical to DOS 3.0 BPB)
     unsigned short numeroDeCabecas;         // 0x01A	        0x0F	    WORD	        Number of heads (identical to DOS 3.0 BPB)
-    unsigned int setoresEscondidos          // 0x01C	        0x11	    DWORD	        Hidden sectors (incompatible with DOS 3.0 BPB)
+    unsigned int setoresEscondidos;         // 0x01C	        0x11	    DWORD	        Hidden sectors (incompatible with DOS 3.0 BPB)
     unsigned int quantidadeSetoresGrandes;  // 0x020	        0x15	    DWORD	        Large total logical sectors
 
 
                                             // [ DOS 7.1 EBPB ]
                                             // Sector offset	BPB offset	Field length	Description
-    unsigned int setoresPorFat;             // 0x024	        0x19	    DWORD	        Logical sectors per FAT
+    unsigned int setoresPorFat2;            // 0x024	        0x19	    DWORD	        Logical sectors per FAT
     unsigned short bandeirasEspelhamento;   // 0x028	        0x1D	    WORD	        Mirroring flags etc.
     unsigned short versao;                  // 0x02A	        0x1F	    WORD	        Version
     unsigned int clusterRoot;               // 0x02C	        0x21	    DWORD	        Root directory cluster
@@ -57,10 +57,27 @@ struct blocoParametrosBios{
     unsigned short setorDoBackup;           // 0x032	        0x27	    WORD	        Location of backup sector(s)
     unsigned char reservado[12];            // 0x034	        0x29	    12 BYTEs	    Reserved (Boot file name)
     unsigned char numeroDriveFisico;        // 0x040	        0x35	    BYTE	        Physical drive number
-    unsigned char bandeiras;                // 0x041	        0x36	    BYTE	        Flags etc.
+    unsigned char reservados2;              // 0x041	        0x36	    BYTE	        Flags etc.
     unsigned char assinaturaExBoot;         // 0x042	        0x37	    BYTE	        Extended boot signature (0x29)
     unsigned int numeroSerialVolume;        // 0x043	        0x38	    DWORD	        Volume serial number
     unsigned char labelDoVolume[11];        // 0x047	        0x3C	    11 BYTEs	    Volume label
     unsigned char tipoSistemaDeArquivos[8]; // 0x052	        0x47	    8 BYTEs	        File-system type
+    unsigned char codigoBoot[420];
+    unsigned short assinaturaBoot;          // 0xAA55
+};
 
-}
+
+/*
+    A struct setorInformacoesFS representa o Bloco de informações referentes ao sistema de arquivos.
+    Este bloco ocupa todo o segundo setor do disco logo depois do Boot sector.
+*/
+struct setorInformacoesFS{
+    int leadSignature;  // 0x41615252 Esta assinatura valida que isso é realmente um FSinformation Sector
+    char reservados[480]; // Estes bytes devem estar sempre zerados
+    int structSignature; // 0x61417272 Esta assinatura valida que isso é realmente um FSinformation Sector
+    int contadorClusterLivre; // Indica o ultimo custer livre usado no disco. Se for 0xFFFFFFFF então não existe. Nem sempre esta corretor.
+    int contadorProximoClusterLivre; // Indica o proximo cluster livre.
+    char reservados2[12]; // Este bytes devem estar sempre zerados.
+    int assinaturaDaTrilha; // 0xAA550000 Esta assinatura valida que isso é realmente um FSinformation Sector.
+};
+
