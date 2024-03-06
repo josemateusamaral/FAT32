@@ -1,7 +1,6 @@
 <br>
 A versão atual consegue apenas criar uma imagem FAT32, porem essa imagem ainda não foi completamente testada.
-<br>
-<br>
+<br><br><br><br>
 
 <b> Coisas a fazer </b> <br>
 
