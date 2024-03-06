@@ -1,0 +1,42 @@
+#gerar imagem FAT
+sudo apt-get install dosfstools
+mkfs.fat -F 32 -n LABEL -S 512 -C discoFAT.img 8192
+-F 32: Especifica que você deseja criar um sistema de arquivos FAT32. Você pode ajustar isso para FAT12 ou FAT16, dependendo das suas necessidades.
+-n LABEL: Define um rótulo para o sistema de arquivos. Substitua "LABEL" pelo rótulo desejado.
+-S 512: Especifica o tamanho do setor. Geralmente, os sistemas de arquivos FAT usam setores de 512 bytes.
+-C imagem_fat.img: Especifica o nome do arquivo de imagem de disco a ser criado.
+8192: Especifica o número de setores na imagem. Você pode ajustar isso conforme necessário.
+
+
+#montar imagem de disco FAT
+sudo mount -o loop discoFAT.img /FAT
+
+
+#desmontar imagem de disco FAT
+sudo umount /FAT
+
+
+
+#argumentos do main.sh
+compilar = compilar o programar FAT.c
+compilarFuse = compilar o programar FAT.c usando Fuse.c
+executar = compilar e depois executar o programa FAT.c
+executarFuse = compilar e depois executar o programa FAT.c usando Fuse.c
+montarExecutar = montar o discoFAT.img e depois compilar e executar o programa FAT.c
+montarExecutarFuse = montar o discoFAT.img e depois compilar e executar o programa FAT.c usando Fuse.c
+criarDisco = criar o discoFAT.img
+montarDisco = montar o discoFAT.img
+desmontarDisco = desmontar o discoFAT.img
+
+
+
+
+
+COISAS RELACIONADAS AO FUSE.c
+
+#instalar o FUSE
+sudo apt-get update
+sudo apt-get install libfuse3-dev
+
+#compilar usando o fuse.c
+
