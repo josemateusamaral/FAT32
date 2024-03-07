@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "estruturas.c"
 
 /*
@@ -13,6 +14,17 @@ unsigned char* genSetorVazio( int tamanhoSetores ) {
 
     for (int i = 0; i < tamanhoSetores ; i++) {
         setor[i] = 0x0;
+    }
+
+    return setor;
+}
+
+
+unsigned char* genSetorVazioTeste( int tamanhoSetores ) {
+    unsigned char *setor = (unsigned char *)malloc( tamanhoSetores * sizeof(unsigned char) );
+
+    for (int i = 0; i < tamanhoSetores ; i++) {
+        setor[i] = 0xAA;
     }
 
     return setor;
@@ -34,10 +46,48 @@ void testarStruct(){
         Abrir o buffer para criar o arquivo de imagem do FAT32 
     */
     FILE *file = fopen("FAT.img","wb");
-    struct setorInformacoesFS entrada;
-    fwrite(&entrada,sizeof(struct setorInformacoesFS),1,file);
+    struct entradaFAT entrada;
+    strcpy(entrada.filename,"teste   txt");
+    entrada.atributos = 0x04;
+    entrada.startCluster = 2;
+    entrada.fileSize = 11;
+
+    fwrite(&entrada,sizeof(struct entradaFAT),1,file);
     fclose(file);
 
+}
+
+unsigned char* gravarArquivo( char* nomeDoArquivo, char* nomeDisco ) {
+
+    int tamanhoArquivo = 11;
+
+    // pegar arquivo e colocar em uma lista de bytes
+    unsigned char *arquivo = (unsigned char *)malloc( tamanhoArquivo * sizeof(unsigned char) );
+    FILE *file = fopen(nomeDoArquivo,"rb");
+    int result = fread (&arquivo[0], sizeof(char), tamanhoArquivo, file);
+    fclose(file);
+
+    // criar a struct do arquivo
+    struct entradaFAT entrada;
+    strcpy(entrada.filename,"teste   txt");
+    entrada.atributos = 0x04;
+    entrada.startCluster = 2;
+    entrada.fileSize = tamanhoArquivo;
+
+    // colocar arquivo no diretorio root
+    int inicioRoot = ( 32 * 512 ) + 1024;
+    FILE *disco = fopen(nomeDisco,"r+b");
+    fseek(disco, inicioRoot, SEEK_SET);
+    fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
+
+    // colocar os bytes do arquivo no cluster
+    int inicioCluster = inicioRoot + 512;
+    int indexCluster = 2;
+    int posicaoFatArquivo = ( 512 * 32 ) + 32
+    fseek(disco, inicioRoot, SEEK_SET);
+    fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
+
+    return arquivo;
 }
 
 
@@ -95,14 +145,36 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
             fwrite(&entrada,sizeof(struct entradaFAT),1,file);
         }
     }
+    
+    
 
+    /*
+        Criando tabela Root
+    */
+
+    //for( int i = 0 ; i < 16 ; i++ ){
+    //    struct entradaFAT entrada;
+    //    //entrada.filename[11];   
+    //    entrada.atributos = 0;  
+    //    //entrada.reservados = [0,0,0,0,0,0,0,0,0,0]; 
+    //    entrada.time = 0;       
+    //    entrada.date = 0;       
+    //    entrada.startCluster = 0;
+    //    entrada.fileSize = 0; 
+    //    
+    //    fwrite(&entrada,sizeof(struct entradaFAT),1,file);
+//
+    //}
+    unsigned char *setorDoCluster = genSetorVazio(tamanhoSetores);
+    fwrite(setorDoCluster,sizeof(unsigned char),tamanhoSetores,file);
+    free(setorDoCluster);
 
 
     /*
         Adicionando os Clusters ao disco.
         O numero de setores adicionados será igual ao numero de clusters * o numero de setores por cluster.
     */
-    for( int i = 0 ; i < quantidadeClusters ; i++ ){
+    for( int i = 0 ; i < quantidadeClusters - 1 ; i++ ){
         for( int j = 0 ; j < quantidadeSetoresPorCluster ; j++ ){
             unsigned char *setorDoCluster = genSetorVazio(tamanhoSetores);
             fwrite(setorDoCluster,sizeof(unsigned char),tamanhoSetores,file);
@@ -117,11 +189,21 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
 
 }
 
+
+/* ESTRUTURA DO DISCO
+512 * 32 = setores reservados no começodo disco
+( 32 * 16 ) * 2 = Tabelas FAT 2 vezes
+
+
+*/
+
 int main() {
 
     // criar imagem de disco FAT32
-    criarDisco("FAT.img",512,10,1);
+    
     //testarStruct();
+    criarDisco("FAT.img",512,16,1);
+    gravarArquivo("teste.txt","FAT.img");
 
     return 0;
 }
