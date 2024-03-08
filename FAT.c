@@ -80,13 +80,6 @@ unsigned char* gravarArquivo( char* nomeDoArquivo, char* nomeDisco ) {
     fseek(disco, inicioRoot, SEEK_SET);
     fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
 
-    // colocar os bytes do arquivo no cluster
-    int inicioCluster = inicioRoot + 512;
-    int indexCluster = 2;
-    int posicaoFatArquivo = ( 512 * 32 ) + 32
-    fseek(disco, inicioRoot, SEEK_SET);
-    fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
-
     return arquivo;
 }
 
