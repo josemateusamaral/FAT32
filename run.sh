@@ -4,7 +4,7 @@ rm Teste
 rm FAT.img
 rm arquivosTeste/novoTeste.txt
 rm dump.txt
-rm arquivoTeste/imagem.png
+rm arquivosTeste/imagem.png
 
 # compilar programa
 echo "compilando programa..."
