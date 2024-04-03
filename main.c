@@ -6,27 +6,7 @@
 #include "includes/estruturas.c"
 #include "includes/terminal.c"
 #include "includes/gerador.c"
-
-void listarClustersOcupados( char* nomeDisco ){
-
-    FILE *disco = fopen(nomeDisco,"r+b");
-
-    int inicioFat = ( 512 * 32 );
-
-    printf("\n--- TABELA FAT32 POR CLUSTER -----");
-    for( int i = 0 ; i < 16 ; i++ ){
-        fseek(disco,inicioFat,SEEK_SET);
-        struct entradaFAT entrada;
-        fread(&entrada, sizeof(struct entradaFAT), 1, disco);
-        if(entrada.atributos){
-            printf("\n\nNome: %s\nCluster: %d\ntamanho: %d\n-->: %d",entrada.filename,i,entrada.fileSize,entrada.startCluster);
-        }
-        inicioFat += 32;
-    }
-
-    printf("\n");
-
-}
+#include "includes/chamadasSistema.c"
 
 int main() {
 
@@ -43,10 +23,10 @@ int main() {
     //listarClustersOcupados("FAT.img");
 
     // ler arquivo da imagem do disco FAT32
-    printf("\n\n");
+    //printf("\n\n");
     lerArquivo("letra   png","FAT.img","arquivosTeste/imagem.png");
 
-    listarClustersOcupados("FAT.img");
+    //listarClustersOcupados("FAT.img");
     // apagar arquivo no meio dos clusters usados
     //apagarArquivo("teste   txt","FAT.img");
 

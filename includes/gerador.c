@@ -25,7 +25,7 @@ unsigned char* genSetorVazio( int tamanhoSetores ) {
 int acharClusterVazio( FILE* disco, int descartar){
 
     int posicao = 1;
-    int inicioFat = ( 512 * 32 ) + 32;
+    int inicioFat = ( 512 * 32 ) + 4;
 
     while(1){
 
@@ -38,11 +38,11 @@ int acharClusterVazio( FILE* disco, int descartar){
         struct entradaFAT entrada;
         fread(&entrada, sizeof(struct entradaFAT), 1, disco);
 
-        if(!entrada.atributos){
+        if(!entrada.ponteiro){
             break;
         }
         else{
-            inicioFat += 32;
+            inicioFat += 4;
             posicao++;
         }
     }
@@ -62,8 +62,8 @@ int acharEntradaVazia( FILE* disco ){
     while(1){
 
         fseek(disco,inicioRoot, SEEK_SET);
-        struct entradaFAT entrada;
-        fread(&entrada, sizeof(struct entradaFAT), 1, disco);
+        struct entradaDiretorio entrada;
+        fread(&entrada, sizeof(struct entradaDiretorio), 1, disco);
 
         if(entrada.atributos == 0){
             break;
@@ -87,8 +87,8 @@ void apagarArquivo( char* nomeArquivo, char* nomeDisco ){
     // acessar a tabela do diretorio root
     int inicioEntradas = ( 32 * 512 ) + 1024;
     FILE *disco = fopen(nomeDisco,"r+b");
-    struct entradaFAT entradaLimpa;
-    memset(&entradaLimpa, 0, sizeof(struct entradaFAT));
+    struct entradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
 
     /* 
       criar struct de entrada apartir das entradas da root
@@ -101,8 +101,8 @@ void apagarArquivo( char* nomeArquivo, char* nomeDisco ){
     while( quantidadeEntradas <= 16 ){
 
         fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaFAT entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaFAT), 1, disco);
+        struct entradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -115,7 +115,7 @@ void apagarArquivo( char* nomeArquivo, char* nomeDisco ){
             proximoCluster = entradaTeste.startCluster;
             tamanhoArquivo = entradaTeste.fileSize;
             fseek(disco, inicioEntradas, SEEK_SET);
-            fwrite(&entradaLimpa,sizeof(struct entradaFAT),1,disco);
+            fwrite(&entradaLimpa,sizeof(struct entradaDiretorio),1,disco);
             break;
         }
         else{
@@ -125,18 +125,21 @@ void apagarArquivo( char* nomeArquivo, char* nomeDisco ){
     }
 
     // limpar todas as entradas FAT referentes aos clusters desse arquivo
+    struct entradaFAT entradaLimpaFAT;
+    memset(&entradaLimpaFAT, 0, sizeof(struct entradaFAT));
+
     int qnt_cluster = tamanhoArquivo / 512;
     if(tamanhoArquivo % 512){
         qnt_cluster++;
     }
     for (int i = 0; i < qnt_cluster; i++){
-        int posicaoEntradaCluster = ( 512 * 32 ) + ( 32 * proximoCluster );
+        int posicaoEntradaCluster = ( 512 * 32 ) + ( 4 * proximoCluster );
         fseek(disco, posicaoEntradaCluster, SEEK_SET);
         struct entradaFAT testeEntrada;
         fread(&testeEntrada, sizeof(struct entradaFAT), 1, disco);
         fseek(disco, posicaoEntradaCluster, SEEK_SET);
-        proximoCluster = testeEntrada.startCluster;
-        fwrite(&entradaLimpa,sizeof(struct entradaFAT),1,disco);
+        proximoCluster = testeEntrada.ponteiro;
+        fwrite(&entradaLimpaFAT,sizeof(struct entradaFAT),1,disco);
     }
 
     fclose(disco);
@@ -167,18 +170,18 @@ void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
     fread(&arquivo[0], sizeof(char), tamanhoArquivo, file);
     fclose(file);
 
-    // criar entradaFAT para o arquivo
-    struct entradaFAT entrada;
+    // criar entradaDiretorio para o arquivo
+    struct entradaDiretorio entrada;
     strcpy(entrada.filename,nomeGravacao);
     entrada.atributos = 0x20;
     entrada.startCluster = clusterVazio;
     entrada.fileSize = tamanhoArquivo;
 
-    // colocar a entradaFAT no diretorio root
+    // colocar a entradaDiretorio no diretorio root
     int entradaLivreNoRoot = acharEntradaVazia(disco);
     int inicioRoot = ( 32 * 512 ) + 1024 + ( 32 * entradaLivreNoRoot);
     fseek(disco, inicioRoot, SEEK_SET);
-    fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
+    fwrite(&entrada,sizeof(struct entradaDiretorio),1,disco);
 
     // colocar os bytes do arquivo no cluster
     int qnt_cluster = tamanhoArquivo / 512;
@@ -198,20 +201,25 @@ void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
         j += 512;
 
         // configurar a FAT do cluster
-        int inicioFatCluster = ( 512 * 32 ) + ( 32 * clusterVazio );
+        int inicioFatCluster = ( 512 * 32 ) + ( 4 * clusterVazio );
         fseek(disco, inicioFatCluster, SEEK_SET);
+
+        struct entradaFAT entradaDaFat;
+        fread(&entradaDaFat, sizeof(struct entradaFAT), 1, disco);
+
         if (i == qnt_cluster-1){
             // ultima parte do arquivo
-            entrada.startCluster = 0xffff;
-            fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
+            entradaDaFat.ponteiro = 0xffffffff;
+            fseek(disco, inicioFatCluster, SEEK_SET);
+            fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,disco);
         }
         else{     
             // parte normal. OBS: É  necessário passar o numero desse cluster para ser descartado da busca por cluster vazios.
             // Isso é necessário pois o cluster ainda não foi gravado, então aparecera como vazio na busca
             clusterVazio = acharClusterVazio(disco,clusterVazio);
-            entrada.startCluster = clusterVazio;   
+            entradaDaFat.ponteiro = clusterVazio; 
             fseek(disco, inicioFatCluster, SEEK_SET);    
-            fwrite(&entrada,sizeof(struct entradaFAT),1,disco);
+            fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,disco);
         }
     }
     fclose(disco);
@@ -243,8 +251,8 @@ void lerArquivo(char* nomeArquivo, char* nomeDiscoFAT, char* nomeFinalArquivo){
     while( quantidadeEntradas <= 16 ){
 
         fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaFAT entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaFAT), 1, disco);
+        struct entradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
 
         // Diminuir o tamanho do nome do aqruivo para 11
         char nome[11];
@@ -302,11 +310,11 @@ void lerArquivo(char* nomeArquivo, char* nomeDiscoFAT, char* nomeFinalArquivo){
 
 
         // verificar o proximo cluster na tabela FAT do arquivo
-        int inicioFatCluster = ( 512 * 32 ) + ( 32 * posicaoCluster);
+        int inicioFatCluster = ( 512 * 32 ) + ( 4 * posicaoCluster);
         struct entradaFAT proximoCluster;
         fseek(disco, inicioFatCluster, SEEK_SET);
         fread(&proximoCluster, sizeof(struct entradaFAT), 1, disco);
-        posicaoCluster = proximoCluster.startCluster;
+        posicaoCluster = proximoCluster.ponteiro;
 
     }
 
@@ -406,12 +414,9 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
     */
     struct entradaFAT entradaRoot;
     memset(&entradaRoot, 0, sizeof(struct entradaFAT));
-    strcpy(entradaRoot.filename,"ROOTDIR    ");
-    entradaRoot.atributos = 0x10;
-    entradaRoot.startCluster = 0xffff;
-    entradaRoot.fileSize = 0;
+    entradaRoot.ponteiro = 0xffffffff;
     for( int j = 0 ; j < 2 ; j++ ){
-        for( int i = 0 ; i < quantidadeClusters ; i++ ){
+        for( int i = 0 ; i < ( 512 / 4 ); i++ ){
             if( i == 0 ){
                 fwrite(&entradaRoot,sizeof(struct entradaFAT),1,file);
             }else{
@@ -427,9 +432,9 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
         Criando tabela Root
     */
     for( int i = 1 ; i < 16 ; i++ ){
-        struct entradaFAT entrada;
-        memset(&entrada, 0, sizeof(struct entradaFAT));
-        fwrite(&entrada,sizeof(struct entradaFAT),1,file);
+        struct entradaDiretorio entrada;
+        memset(&entrada, 0, sizeof(struct entradaDiretorio));
+        fwrite(&entrada,sizeof(struct entradaDiretorio),1,file);
     }
 
 

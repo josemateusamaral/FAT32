@@ -1,8 +1,8 @@
 /*
-    A struct entradaFAT representa uma entrada de diretirio FAT.
+    A struct entradaDiretorio representa uma entrada de diretirio FAT.
     Cada entrada representa um arquivo e aponta para o cluster inicial do arquivo. 
 */
-struct entradaFAT{
+struct entradaDiretorio{
     unsigned char filename[11];     // 0-10    File name (8 bytes) with extension (3 bytes)
     unsigned char atributos;        /* 11      Attribute - a bitvector. 
                                                Bit 0: read only. 
@@ -17,6 +17,13 @@ struct entradaFAT{
     unsigned short date;            // 24-25   Date (7/4/5 bits, for year-since-1980/month/day)
     unsigned short startCluster;    // 26-27   Starting cluster (0 for an empty file)
     unsigned int fileSize;          // 28-31   Filesize in bytes
+};
+
+/*
+    A struct entradaFAT serve para apontar os clusters na FAT32
+*/
+struct entradaFAT{
+    unsigned int ponteiro;
 };
 
 
@@ -79,5 +86,15 @@ struct setorInformacoesFS{
     int contadorProximoClusterLivre;    // Indica o proximo cluster livre.
     char reservados2[12];               // Este bytes devem estar sempre zerados.
     int assinaturaDaTrilha;             // 0xAA550000 Esta assinatura valida que isso é realmente um FSinformation Sector.
+};
+
+
+/*
+    Esta estrutura é retornada pela função open e representa os dados necessários para acessar o arquivo no disco
+*/
+struct open_FAT32{
+    unsigned char filename[11];
+    unsigned int tamanhoArquivo;
+    int clusters[];
 };
 
