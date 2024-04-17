@@ -4,9 +4,11 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 #include "includes/estruturas.c"
+#include "includes/utils.c"
 #include "includes/terminal.c"
 #include "includes/gerador.c"
 #include "includes/chamadasSistema.c"
+
 
 int main() {
 
@@ -19,24 +21,46 @@ int main() {
     gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra   png");
     gravarArquivo("arquivosTeste/teste.txt","FAT.img","teste   txt");
     gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra2  png");
-
-    //listarClustersOcupados("FAT.img");
-
-    // ler arquivo da imagem do disco FAT32
-    //printf("\n\n");
     lerArquivo("letra   png","FAT.img","arquivosTeste/imagem.png");
 
-    //listarClustersOcupados("FAT.img");
-    // apagar arquivo no meio dos clusters usados
-    //apagarArquivo("teste   txt","FAT.img");
 
-    // checar os conteudos do diretorio root
-    //terminarl__ls("FAT.img");
-    //apagarArquivo("teste   txt","FAT.img");
-    //terminarl__ls("FAT.img");
 
-    // printar entrada FAT ocupdas
-    
+    //chamada de sistema fopen
+    struct FAT32__fopen file = chamadaSistema__fopen("letra   png","FAT.img");
+
+
+    //chamada de sistema fseek
+    chamadaSistema__fseek(&file,500,SEEK_SET);
+
+
+    //chamada de sistema fread
+    int tamanhoLeitura = 200;
+    unsigned char bytesLidos[tamanhoLeitura];
+    chamadaSistema__fread( &bytesLidos[0], sizeof( unsigned char), tamanhoLeitura, file );
+    //printf("\nBytes lidos: ");
+    //for( int i = 0 ; i < tamanhoLeitura ; i++ ){
+    //    printf("%02X ",bytesLidos[i]);
+    //}
+    //printf("\n\n");
+
+
+    //chamada de sistema fwrite
+    chamadaSistema__fseek(&file,700,SEEK_SET);
+    int tamanhoEscrita = 500;
+    unsigned char *bytesParaEscrever = (unsigned char *)malloc( tamanhoEscrita * sizeof(unsigned char) );
+    for (int i = 0; i < tamanhoEscrita ; i++) {
+        bytesParaEscrever[i] = 0xaa;
+    }
+    chamadaSistema__fwrite(bytesParaEscrever,sizeof(unsigned char),tamanhoEscrita,file);
+
+
+    //chamada de sistema fclose
+    chamadaSistema__fclose(&file);
+
+
+    //printarFat("FAT.img");
+    //terminarl__ls("FAT.img");
 
     return 0;
+
 }

@@ -18,7 +18,7 @@ void terminarl__ls( char* nomeDisco ){
         fread(&entrada, sizeof(struct entradaDiretorio), 1, disco);
         
         //printar ou não printar ? eis a questão.
-        if( entrada.fileSize != 0 ){
+        if( entrada.startCluster != 0 ){
             printf("%s\t\t%d bytes\n", entrada.filename, entrada.fileSize);
         }
     }  

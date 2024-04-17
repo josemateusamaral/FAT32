@@ -1,4 +1,18 @@
 /*
+    Esta estrutura é retornada pela função open e representa os metadados necessários para acessar o arquivo no disco
+*/
+struct FAT32__fopen {
+    unsigned char filename[11];
+    unsigned int tamanhoArquivo;
+    unsigned int qnt_cluster;
+    unsigned int posicaoNoArquivo;
+    FILE* disco;
+    int *clusters; // Um ponteiro para um array de inteiros
+};
+
+
+
+/*
     A struct entradaDiretorio representa uma entrada de diretirio FAT.
     Cada entrada representa um arquivo e aponta para o cluster inicial do arquivo. 
 */
@@ -87,14 +101,3 @@ struct setorInformacoesFS{
     char reservados2[12];               // Este bytes devem estar sempre zerados.
     int assinaturaDaTrilha;             // 0xAA550000 Esta assinatura valida que isso é realmente um FSinformation Sector.
 };
-
-
-/*
-    Esta estrutura é retornada pela função open e representa os dados necessários para acessar o arquivo no disco
-*/
-struct open_FAT32{
-    unsigned char filename[11];
-    unsigned int tamanhoArquivo;
-    int clusters[];
-};
-
