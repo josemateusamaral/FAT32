@@ -102,6 +102,48 @@ int acharEntradaVazia( FILE* disco ){
 
 
 /*
+    Pegar a posicao de uma entrada de diretorio
+*/
+int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
+    // acessar a tabela do diretorio root
+    int inicioEntradas = ( 32 * 512 ) + 1024;
+    struct entradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
+
+    /* 
+      criar struct de entrada apartir das entradas da root
+      Para isso é necessário procurar o arquivo pelo nome entre as entrada da root 
+    */
+    int proximoCluster;
+    int quantidadeEntradas = 0;
+    int posicao = 0;
+
+    while( quantidadeEntradas <= 16 ){
+
+        fseek(disco, inicioEntradas, SEEK_SET);
+        struct entradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
+
+        // Diminuir o tamanho do nome do arquivo para 11
+        char nome[11];
+        strncpy(nome, entradaTeste.filename, 11);
+        int comparacao = strcmp(nome,nomeArquivo);
+
+        // comparando o nome do arquivo com o nome da entrada para ver se são iguais
+        // OBS: strcmp retorna zero quando as strings são iguais. Diferente doque poderiamos pensar.
+        if(comparacao == 0){
+            return posicao;
+        }
+        else{
+            inicioEntradas += 32;
+        }
+        quantidadeEntradas++;
+        posicao++;
+    }
+}
+
+
+/*
     Pegar entrada de um arquivo
 */
 struct entradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
@@ -211,6 +253,21 @@ void printarOpen(struct FAT32__fopen file){
 
 
 /*
+printar a struct de entradaDeDiretorio
+*/
+void printEntradaDiretorio(struct entradaDiretorio file){
+
+    printf("nome arquivo: %s\n",file.filename);
+    printf("atributos: %02X\n",file.atributos);
+    printf("tempo: %d\n",file.time);
+    printf("data: %d\n",file.date);
+    printf("primeiro cluster: %d\n",file.startCluster);
+    printf("tamanho: %d\n",file.fileSize);
+    printf("\n");
+}
+
+
+/*
     Pegar um cluster e colocar em um array
 */
 /*
@@ -226,5 +283,45 @@ unsigned char* clusterToArray( int numeroCluster, FILE * disco, int tamanhoClust
     fseek(disco, posicaoCluster, SEEK_SET);
     fread(&cluster[0], sizeof(unsigned char), tamanhoCluster, disco);
     return cluster;
+}
+
+
+/*
+    formatar nome de arquivo para entrada de diretorio
+*/
+char * formatarNomeDeArquivo( char * nomeArquivo ){
+
+    /*
+    int tamanhoNome = strlen(nomeArquivo);
+    printf("tamanho da string: %ld\n",tamanhoNome);
+
+    //pegar a extensao do arquivo
+    char extensao[3];
+    strncpy(extensao, nomeArquivo + (tamanhoNome-3), 3);
+    printf("extensao: %s\n",extensao);
+
+    //pegar nome do arquivo sem a extensao
+    char nomeSemExtensao[8];
+    strncpy(nomeSemExtensao, nomeArquivo, (tamanhoNome-4));
+    printf("nome sem extensao: %s\n",nomeSemExtensao);
+
+    //criar os espaços para colocar entre o nome e a extensao
+    int tamanhoEspaco = 8 - strlen(nomeSemExtensao);
+    printf("tamanho espaco: %d\n",tamanhoEspaco);
+    char espaco[tamanhoEspaco];
+    for( int i = 0 ; i < tamanhoEspaco ; i++ ){
+        espaco[i] = " ";
+    }
+
+
+    //montar nome formatado
+    
+    sprintf(nomeFormatado, "%s%s%s", nomeSemExtensao, espaco,extensao);
+
+
+    printf("nome formatado final: %s\n",nomeFormatado);
+    */
+    char *nomeFormatado = (char *)malloc(12 * sizeof(char));
+    return nomeFormatado;
 }
 

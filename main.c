@@ -30,22 +30,22 @@ int main() {
 
 
     //chamada de sistema fseek
-    chamadaSistema__fseek(&file,500,SEEK_SET);
+    chamadaSistema__fseek(&file,0,SEEK_SET);
 
 
     //chamada de sistema fread
     int tamanhoLeitura = 200;
     unsigned char bytesLidos[tamanhoLeitura];
     chamadaSistema__fread( &bytesLidos[0], sizeof( unsigned char), tamanhoLeitura, file );
-    //printf("\nBytes lidos: ");
-    //for( int i = 0 ; i < tamanhoLeitura ; i++ ){
-    //    printf("%02X ",bytesLidos[i]);
-    //}
-    //printf("\n\n");
+    printf("\nBytes lidos: ");
+    for( int i = 0 ; i < tamanhoLeitura ; i++ ){
+        printf("%02X ",bytesLidos[i]);
+    }
+    printf("\n\n");
 
 
     //chamada de sistema fwrite
-    chamadaSistema__fseek(&file,700,SEEK_SET);
+    chamadaSistema__fseek(&file,0,SEEK_SET);
     int tamanhoEscrita = 500;
     unsigned char *bytesParaEscrever = (unsigned char *)malloc( tamanhoEscrita * sizeof(unsigned char) );
     for (int i = 0; i < tamanhoEscrita ; i++) {
@@ -58,8 +58,11 @@ int main() {
     chamadaSistema__fclose(&file);
 
 
-    //printarFat("FAT.img");
-    //terminarl__ls("FAT.img");
+    printarFat("FAT.img");
+    terminarl__ls("FAT.img");
+
+    //printf("nome formatado: %s\n",);
+    //formatarNomeDeArquivo("teste.txt");
 
     return 0;
 

@@ -180,10 +180,20 @@ void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, 
     }
     else{
         
+        //calcular os parametros
         int indexDoClusterNoClusterDoArquivo = file.posicaoNoArquivo / tamanhoCluster;
         int numeroClusterAtual = file.clusters[indexDoClusterNoClusterDoArquivo];
         int espacoNoCluster = tamanhoCluster - (file.posicaoNoArquivo % tamanhoCluster);
-        int posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * numeroClusterAtual ) + (tamanhoCluster- espacoNoCluster);
+        int posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * numeroClusterAtual ) + (tamanhoCluster - espacoNoCluster);
+
+        //aumentar o tamanho do arquivo na entrada de diretorio
+        struct entradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(file.disco,file.filename);
+        entradaDoArquivo.fileSize = file.posicaoNoArquivo + tamanhoTotalDaEscrita;
+        int posicaoEntrada =  pegarPosicaoEntradaDeDiretorio(file.disco,file.filename);
+        int posicaoParaNoDisco = (512 * 32) + 1024 + (posicaoEntrada*32);
+        fseek(file.disco, posicaoParaNoDisco, SEEK_SET);
+        fwrite(&entradaDoArquivo,sizeof(struct entradaDiretorio),1,file.disco);
+        fflush(file.disco);
 
         //verificar se vai tudo em um cluster ou vai ter que dividir em 2
         if(tamanhoTotalDaEscrita > espacoNoCluster){
@@ -201,7 +211,7 @@ void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, 
                 indexDoArrayPrincipal++;
             }
             for( int i = 0 ; i < tamanhoParte2 ; i++ ){
-                array2[i] = 0xbb;//bytesParaEscrever[indexDoArrayPrincipal];
+                array2[i] = bytesParaEscrever[indexDoArrayPrincipal];
                 indexDoArrayPrincipal++;
             }
 
