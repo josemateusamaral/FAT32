@@ -15,7 +15,7 @@ int main() {
     printf("\n\n\n");
 
     // criar imagem de disco FAT32
-    criarDisco("FAT.img",512,16,1);
+    criarDisco("FAT.img",512,128,1);
 
     // gravar o arquivo teste.txt no arquivo da imagem do FAT32
     gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra   png");
