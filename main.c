@@ -61,8 +61,28 @@ int main() {
     printarFat("FAT.img");
     terminarl__ls("FAT.img");
 
-    //printf("nome formatado: %s\n",);
-    //formatarNomeDeArquivo("teste.txt");
+
+    //testar a copia de um arquivo do disco FAT32 para fora
+    FILE * arquivoSaida = fopen("arquivoSaida.png","wb");
+    fseek(arquivoSaida,0,SEEK_SET);
+    struct FAT32__fopen fileDentro = chamadaSistema__fopen("letra2  png","FAT.img");
+    int posicaoLeitura = 0;
+    int tamanhoArquivo = fileDentro.tamanhoArquivo;
+    while(posicaoLeitura < tamanhoArquivo){
+        chamadaSistema__fseek(&fileDentro,posicaoLeitura,SEEK_SET);
+        int tamanhoLeitura = 512;
+        if( (fileDentro.posicaoNoArquivo + tamanhoLeitura) > fileDentro.tamanhoArquivo ){
+            tamanhoLeitura = fileDentro.tamanhoArquivo - fileDentro.posicaoNoArquivo;
+
+        }
+        unsigned char bytesLidos[tamanhoLeitura];
+        chamadaSistema__fread( &bytesLidos[0], 1, tamanhoLeitura, fileDentro );
+        fwrite(bytesLidos, sizeof(unsigned char), tamanhoLeitura, arquivoSaida);
+        posicaoLeitura += tamanhoLeitura;
+    }
+    fclose(arquivoSaida);
+    chamadaSistema__fclose(&fileDentro);
+
 
     return 0;
 
