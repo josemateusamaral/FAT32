@@ -118,7 +118,7 @@ void chamadaSistema__fseek(struct FAT32__fopen * file, int offset, int posiciona
 /*
     Esta chamada de sistema realiza a leitura dos bytes de um arquivo para um array
 */
-void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, struct FAT32__fopen file ){
+void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, struct FAT32__fopen * file ){
 
     int tamanhoCluster = 512;
     int tamanhoTotalDaLeitura = tamanhoTipo * tamanhoLeitura;
@@ -127,7 +127,7 @@ void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitur
         return;
     }
 
-    if( (file.posicaoNoArquivo + tamanhoTotalDaLeitura) > file.tamanhoArquivo ){
+    if( (file->posicaoNoArquivo + tamanhoTotalDaLeitura) > file->tamanhoArquivo ){
         printf("\n!! ATENÇÂO: Leitura inválida. Você esta lendo mais do que o arquivo !!\n");
         return;
     }
@@ -137,9 +137,9 @@ void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitur
         unsigned char *cluster = (unsigned char *)malloc( (tamanhoCluster * 2) * sizeof(unsigned char) );
 
         //pegar primeiro cluster
-        int indexDoClusterNoClusterDoArquivo = file.posicaoNoArquivo / tamanhoCluster;
-        int numeroClusterAtual = file.clusters[indexDoClusterNoClusterDoArquivo];
-        unsigned char *clusterLido = clusterToArray(numeroClusterAtual,file.disco,tamanhoCluster);
+        int indexDoClusterNoClusterDoArquivo = file->posicaoNoArquivo / tamanhoCluster;
+        int numeroClusterAtual = file->clusters[indexDoClusterNoClusterDoArquivo];
+        unsigned char *clusterLido = clusterToArray(numeroClusterAtual,file->disco,tamanhoCluster);
         int quantidadeDoCluster = 0;
         for( int i = 0 ; i < tamanhoCluster ; i++ ){
             cluster[quantidadeDoCluster] = clusterLido[i];
@@ -148,9 +148,9 @@ void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitur
 
         //caso tenha mais algum cluster depois desse, pegaremos ele tambem pois como a leitura esta limitada a 
         //um cluster, dessa forma a gente não precisa fazer um algoritmo muito complicado para resolver isso
-        if(indexDoClusterNoClusterDoArquivo+1 < file.qnt_cluster){
-            numeroClusterAtual = file.clusters[indexDoClusterNoClusterDoArquivo+1]; 
-            unsigned char *clusterLido2 = clusterToArray(numeroClusterAtual,file.disco,tamanhoCluster);
+        if(indexDoClusterNoClusterDoArquivo+1 < file->qnt_cluster){
+            numeroClusterAtual = file->clusters[indexDoClusterNoClusterDoArquivo+1]; 
+            unsigned char *clusterLido2 = clusterToArray(numeroClusterAtual,file->disco,tamanhoCluster);
             for( int i = 0 ; i < tamanhoCluster ; i++ ){
                 cluster[quantidadeDoCluster] = clusterLido2[i];
                 quantidadeDoCluster++;
@@ -158,21 +158,21 @@ void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitur
         }
 
         //pegando os bytes dos clusters e colocando no array da saida
-        int posicaoLeituraNoCluster = file.posicaoNoArquivo % tamanhoCluster;
+        int posicaoLeituraNoCluster = file->posicaoNoArquivo % tamanhoCluster;
         for( int i = 0 ; i < tamanhoTotalDaLeitura ; i++ ){
             recebedor[i] = cluster[posicaoLeituraNoCluster];
             posicaoLeituraNoCluster++;
         }
 
-        file.posicaoNoArquivo += tamanhoTotalDaLeitura;
+        file->posicaoNoArquivo += tamanhoTotalDaLeitura;
 
     }
 }
 
-void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBytes, struct FAT32__fopen file){
+void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBytes, struct FAT32__fopen * file){
 
     int tamanhoCluster = 512;
-    int tamanhoTotalDaEscrita = tamanhoTipo + quantidadeBytes;
+    int tamanhoTotalDaEscrita = quantidadeBytes * tamanhoTipo;
 
     if( tamanhoTotalDaEscrita > tamanhoCluster ){
         printf("\n!! ATENÇÂO: Escrita inválida. A escrita é limitada ao tamanho de um cluster.\nO tamanho dos clusters deste disco é %d bytes e você está tentando escrever %d bytes !!\n",tamanhoCluster,tamanhoTotalDaEscrita);
@@ -181,25 +181,28 @@ void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, 
     else{
         
         //calcular os parametros
-        int indexDoClusterNoClusterDoArquivo = file.posicaoNoArquivo / tamanhoCluster;
-        int numeroClusterAtual = file.clusters[indexDoClusterNoClusterDoArquivo];
-        int espacoNoCluster = tamanhoCluster - (file.posicaoNoArquivo % tamanhoCluster);
+        int indexDoClusterNoClusterDoArquivo = file->posicaoNoArquivo / tamanhoCluster;
+        int numeroClusterAtual = file->clusters[indexDoClusterNoClusterDoArquivo];
+        int espacoNoCluster = tamanhoCluster - (file->posicaoNoArquivo % tamanhoCluster);
         int posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * numeroClusterAtual ) + (tamanhoCluster - espacoNoCluster);
 
         //aumentar o tamanho do arquivo na entrada de diretorio
-        struct entradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(file.disco,file.filename);
-        entradaDoArquivo.fileSize = file.posicaoNoArquivo + tamanhoTotalDaEscrita;
-        int posicaoEntrada =  pegarPosicaoEntradaDeDiretorio(file.disco,file.filename);
+        struct entradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(file->disco,file->filename);
+        int tamanhoAtualDoArquivo = entradaDoArquivo.fileSize;
+        if(tamanhoAtualDoArquivo < file->posicaoNoArquivo + tamanhoTotalDaEscrita){
+            entradaDoArquivo.fileSize = file->posicaoNoArquivo + tamanhoTotalDaEscrita;
+        }
+        int posicaoEntrada =  pegarPosicaoEntradaDeDiretorio(file->disco,file->filename);
         int posicaoParaNoDisco = (512 * 32) + 1024 + (posicaoEntrada*32);
-        fseek(file.disco, posicaoParaNoDisco, SEEK_SET);
-        fwrite(&entradaDoArquivo,sizeof(struct entradaDiretorio),1,file.disco);
-        fflush(file.disco);
+        fseek(file->disco, posicaoParaNoDisco, SEEK_SET);
+        fwrite(&entradaDoArquivo,sizeof(struct entradaDiretorio),1,file->disco);
+        fflush(file->disco);
 
         //verificar se vai tudo em um cluster ou vai ter que dividir em 2
         if(tamanhoTotalDaEscrita > espacoNoCluster){
 
             //calcular o quanto vai em cada cluster
-            int tamanhoParte1 = tamanhoCluster - (file.posicaoNoArquivo % tamanhoCluster);
+            int tamanhoParte1 = tamanhoCluster - (file->posicaoNoArquivo % tamanhoCluster);
             int tamanhoParte2 = tamanhoTotalDaEscrita - tamanhoParte1;
 
             //dividir o array de bytes em 2 arrays separados
@@ -216,56 +219,62 @@ void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, 
             }
 
             //escrevendo a primeira parte no primeiro cluster
-            fseek(file.disco, posicaoClusterInicio, SEEK_SET);
-            fwrite(bytesParaEscrever,1,tamanhoParte1,file.disco);
-            file.posicaoNoArquivo += tamanhoParte1;
+            fseek(file->disco, posicaoClusterInicio, SEEK_SET);
+            fwrite(bytesParaEscrever,1,tamanhoParte1,file->disco);
+            file->posicaoNoArquivo += tamanhoParte1;
 
             //escrevendo a segunda parte no proximo cluster.
             //no caso de não ter proximo cluster ainda é necessário criar
-            if( (indexDoClusterNoClusterDoArquivo+1) == file.qnt_cluster){
+            if( (indexDoClusterNoClusterDoArquivo+1) == file->qnt_cluster){
                 //alocar mais um cluster
-                int clusterVazio = acharClusterVazio(file.disco,-1);
+
+                //pegar proximo cluster a adicionalo ao file descriptor
+                int clusterVazio = acharClusterVazio(file->disco,-1);
+                file->clusters[file->qnt_cluster] = clusterVazio;
+                file->qnt_cluster++;
 
                 //modificar ultimo cluster para apontar para o novo
                 struct entradaFAT entradaDaFat;
                 memset(&entradaDaFat, 0, sizeof(struct entradaFAT));
                 entradaDaFat.ponteiro = clusterVazio;
-                int posicaoFatCluster = ( 512 * 32 ) + ( 4 * file.clusters[indexDoClusterNoClusterDoArquivo] );
-                fseek(file.disco, posicaoFatCluster, SEEK_SET);
-                fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,file.disco);
+                int posicaoFatCluster = ( 512 * 32 ) + ( 4 * file->clusters[indexDoClusterNoClusterDoArquivo] );
+                fseek(file->disco, posicaoFatCluster, SEEK_SET);
+                fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,file->disco);
 
                 //colocar novo ultimo cluster
                 struct entradaFAT entradaDaFatNova;
                 memset(&entradaDaFatNova, 0, sizeof(struct entradaFAT));
                 entradaDaFatNova.ponteiro = 0xffffffff;
                 int posicaoFatClusterNovo = ( 512 * 32 ) + ( 4 * clusterVazio );
-                fseek(file.disco, posicaoFatClusterNovo, SEEK_SET);
-                fwrite(&entradaDaFatNova,sizeof(struct entradaFAT),1,file.disco);
+                fseek(file->disco, posicaoFatClusterNovo, SEEK_SET);
+                fwrite(&entradaDaFatNova,sizeof(struct entradaFAT),1,file->disco);
 
                 //escrever segunda parte no ultimo cluster
                 posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * clusterVazio );
-                fseek(file.disco, posicaoClusterInicio, SEEK_SET);
-                fwrite(array2,1,tamanhoParte2,file.disco);
+                fseek(file->disco, posicaoClusterInicio, SEEK_SET);
+                fwrite(array2,1,tamanhoParte2,file->disco);
+                file->posicaoNoArquivo += tamanhoParte2;
                 
             }else{
 
                 //tem espaço no ultimo cluster ainda, só escrever nele
-                numeroClusterAtual = file.clusters[indexDoClusterNoClusterDoArquivo+1];
+                numeroClusterAtual = file->clusters[indexDoClusterNoClusterDoArquivo+1];
                 posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * numeroClusterAtual );
-                fseek(file.disco, posicaoClusterInicio, SEEK_SET);
-                fwrite(array2,1,tamanhoParte2,file.disco);
+                fseek(file->disco, posicaoClusterInicio, SEEK_SET);
+                fwrite(array2,1,tamanhoParte2,file->disco);
+                file->posicaoNoArquivo += tamanhoParte2;
             }
 
         }else{
 
             //gravando no cluster. essa gravação ocupa so um cluster
-            fseek(file.disco, posicaoClusterInicio, SEEK_SET);
-            fwrite(bytesParaEscrever,1,tamanhoTotalDaEscrita,file.disco);
+            fseek(file->disco, posicaoClusterInicio, SEEK_SET);
+            fwrite(bytesParaEscrever,1,tamanhoTotalDaEscrita,file->disco);
+            file->posicaoNoArquivo += tamanhoTotalDaEscrita;
         }
 
         //mudar ponteiro
-        file.posicaoNoArquivo += tamanhoTotalDaEscrita;
-        fflush(file.disco);
+        fflush(file->disco);
 
     }
 
