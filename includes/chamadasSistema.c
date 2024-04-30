@@ -118,20 +118,21 @@ void chamadaSistema__fseek(struct FAT32__fopen * file, int offset, int posiciona
 /*
     Esta chamada de sistema realiza a leitura dos bytes de um arquivo para um array
 */
-void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, struct FAT32__fopen * file ){
+int chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, struct FAT32__fopen * file ){
 
     int tamanhoCluster = 512;
     int tamanhoTotalDaLeitura = tamanhoTipo * tamanhoLeitura;
+    
     if( tamanhoTotalDaLeitura > tamanhoCluster ){
         printf("\n!! ATENÇÂO: Leitura inválida. \nA implementação atual permite que a leitura tenha o tamanho de no máximo 1 cluster.\nO tamanho do cluster neste disco é de %d bytes. Você esta tentando ler %d bytes!! \n",tamanhoCluster,tamanhoTotalDaLeitura);
-        return;
+        return 0;
     }
-
-    if( (file->posicaoNoArquivo + tamanhoTotalDaLeitura) > file->tamanhoArquivo ){
-        printf("\n!! ATENÇÂO: Leitura inválida. Você esta lendo mais do que o arquivo !!\n");
-        return;
-    }
+    
     else{
+        
+        if( (file->posicaoNoArquivo + tamanhoTotalDaLeitura) > file->tamanhoArquivo ){
+            tamanhoTotalDaLeitura = file->tamanhoArquivo - file->posicaoNoArquivo;
+        }
         
         //array que vai abrigar os clusters lidos do arquivo
         unsigned char *cluster = (unsigned char *)malloc( (tamanhoCluster * 2) * sizeof(unsigned char) );
@@ -165,8 +166,9 @@ void chamadaSistema__fread( char * recebedor, int tamanhoTipo, int tamanhoLeitur
         }
 
         file->posicaoNoArquivo += tamanhoTotalDaLeitura;
-
     }
+
+    return tamanhoTotalDaLeitura;
 }
 
 void chamadaSistema__fwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBytes, struct FAT32__fopen * file){

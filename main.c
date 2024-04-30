@@ -62,41 +62,36 @@ int main() {
 
 
 
+    //buffer usado para leitura e escrita numero de bytes da leitura
+    int bytes_lidos;
+    unsigned char *bufferLeituraEscrita = (unsigned char *)malloc( 512 * sizeof(unsigned char) );
+
 
     //testes de criacao de arquivo usando a chamada de sistema
     FILE * arquivoEntrada = fopen("arquivosTeste/letra-a.png","rb");
-    fseek(arquivoEntrada,0,SEEK_SET);
     struct FAT32__fopen fileNoFat = chamadaSistema__fopen("arquivo png","FAT.img");
-    int bytes_lidos;
-    unsigned char *bytesLidos2 = (unsigned char *)malloc( 200 * sizeof(unsigned char) );
     while(true){
-        bytes_lidos = fread(&bytesLidos2[0], 1, 200, arquivoEntrada);
-        if(bytes_lidos <= 0){
+        bytes_lidos = fread(&bufferLeituraEscrita[0], 1, 200, arquivoEntrada);
+        if(!bytes_lidos){
             break;
         }else{
-            chamadaSistema__fwrite(bytesLidos2,1,bytes_lidos,&fileNoFat);
+            chamadaSistema__fwrite(bufferLeituraEscrita,1,bytes_lidos,&fileNoFat);
         }
     }
     fclose(arquivoEntrada);
     chamadaSistema__fclose(&fileNoFat);
 
 
-
     //testar a copia de um arquivo do disco FAT32 para fora
     FILE * arquivoSaida = fopen("arquivoSaida.png","wb");
     struct FAT32__fopen fileDentro = chamadaSistema__fopen("arquivo png","FAT.img");
-    while(fileDentro.posicaoNoArquivo < fileDentro.tamanhoArquivo){
-
-        //calcular o tamanho da leitura
-        int tamanhoLeitura = 512;
-        if( (fileDentro.posicaoNoArquivo + tamanhoLeitura) > fileDentro.tamanhoArquivo ){
-            tamanhoLeitura = fileDentro.tamanhoArquivo - fileDentro.posicaoNoArquivo;
+    while(true){
+        bytes_lidos  = chamadaSistema__fread( &bufferLeituraEscrita[0], 1, 512, &fileDentro );
+        if(!bytes_lidos){
+            break;
+        }else{
+            fwrite(bufferLeituraEscrita, sizeof(unsigned char), bytes_lidos, arquivoSaida);
         }
-
-        //ler o bytes do disco FAT e gravar no arquivo fora do disco
-        unsigned char bytesLidos[tamanhoLeitura];
-        chamadaSistema__fread( &bytesLidos[0], 1, tamanhoLeitura, &fileDentro );
-        fwrite(bytesLidos, sizeof(unsigned char), tamanhoLeitura, arquivoSaida);
     }
     fclose(arquivoSaida);
     chamadaSistema__fclose(&fileDentro);
