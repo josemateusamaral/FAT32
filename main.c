@@ -5,9 +5,10 @@
 #include <stdbool.h>
 #include "includes/estruturas.c"
 #include "includes/utils.c"
+#include "includes/xsyscalls.c"
 #include "includes/terminal.c"
 #include "includes/gerador.c"
-#include "includes/chamadasSistema.c"
+
 
 
 int main() {
@@ -23,7 +24,7 @@ int main() {
     gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra   png");
     gravarArquivo("arquivosTeste/teste.txt","FAT.img","teste   txt");
     gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra2  png");
-    lerArquivo("letra   png","FAT.img","arquivosTeste/imagem.png");
+    copiarArquivo("letra   png","FAT.img","arquivosTeste/imagem.png");
 
 
 
@@ -31,15 +32,15 @@ int main() {
 
 
     //chamada de sistema fopen
-    struct FAT32__fopen file = chamadaSistema__fopen("letra   png","FAT.img");
+    struct XFILE file = xopen("letra   png","FAT.img");
 
     //chamada de sistema fseek
-    chamadaSistema__fseek(&file,0,SEEK_SET);
+    xseek(&file,0,SEEK_SET);
 
     //chamada de sistema fread
     int tamanhoLeitura = 200;
     unsigned char bytesLidos[tamanhoLeitura];
-    chamadaSistema__fread( &bytesLidos[0], sizeof( unsigned char), tamanhoLeitura, &file );
+    xread( &bytesLidos[0], sizeof( unsigned char), tamanhoLeitura, &file );
     printf("\nBytes lidos: ");
     for( int i = 0 ; i < tamanhoLeitura ; i++ ){
         printf("%02X ",bytesLidos[i]);
@@ -47,16 +48,16 @@ int main() {
     printf("\n\n");
 
     //chamada de sistema fwrite
-    chamadaSistema__fseek(&file,600,SEEK_SET);
+    xseek(&file,600,SEEK_SET);
     int tamanhoEscrita = 500;
     unsigned char *bytesParaEscrever = (unsigned char *)malloc( tamanhoEscrita * sizeof(unsigned char) );
     for (int i = 0; i < tamanhoEscrita ; i++) {
         bytesParaEscrever[i] = 0xaa;
     }
-    chamadaSistema__fwrite(bytesParaEscrever,sizeof(unsigned char),tamanhoEscrita,&file);
+    xwrite(bytesParaEscrever,sizeof(unsigned char),tamanhoEscrita,&file);
 
     //chamada de sistema fclose
-    chamadaSistema__fclose(&file);
+    xclose(&file);
 
 
 
@@ -69,24 +70,24 @@ int main() {
 
     //testes de criacao de arquivo usando a chamada de sistema
     FILE * arquivoEntrada = fopen("arquivosTeste/letra-a.png","rb");
-    struct FAT32__fopen fileNoFat = chamadaSistema__fopen("arquivo png","FAT.img");
+    struct XFILE fileNoFat = xopen("arquivo png","FAT.img");
     while(true){
         bytes_lidos = fread(&bufferLeituraEscrita[0], 1, 200, arquivoEntrada);
         if(!bytes_lidos){
             break;
         }else{
-            chamadaSistema__fwrite(bufferLeituraEscrita,1,bytes_lidos,&fileNoFat);
+            xwrite(bufferLeituraEscrita,1,bytes_lidos,&fileNoFat);
         }
     }
     fclose(arquivoEntrada);
-    chamadaSistema__fclose(&fileNoFat);
+    xclose(&fileNoFat);
 
 
     //testar a copia de um arquivo do disco FAT32 para fora
     FILE * arquivoSaida = fopen("arquivoSaida.png","wb");
-    struct FAT32__fopen fileDentro = chamadaSistema__fopen("arquivo png","FAT.img");
+    struct XFILE fileDentro = xopen("arquivo png","FAT.img");
     while(true){
-        bytes_lidos  = chamadaSistema__fread( &bufferLeituraEscrita[0], 1, 512, &fileDentro );
+        bytes_lidos  = xread( &bufferLeituraEscrita[0], 1, 512, &fileDentro );
         if(!bytes_lidos){
             break;
         }else{
@@ -94,13 +95,13 @@ int main() {
         }
     }
     fclose(arquivoSaida);
-    chamadaSistema__fclose(&fileDentro);
+    xclose(&fileDentro);
 
 
     
     
     
-    terminarl__ls("FAT.img");
+    terminal__ls("FAT.img");
 
 
 
