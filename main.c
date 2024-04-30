@@ -62,7 +62,7 @@ int main() {
 
 
 
-    //buffer usado para leitura e escrita numero de bytes da leitura
+    //buffer usado para leitura e escrita e numero de bytes da leitura
     int bytes_lidos;
     unsigned char *bufferLeituraEscrita = (unsigned char *)malloc( 512 * sizeof(unsigned char) );
 
