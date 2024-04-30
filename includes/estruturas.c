@@ -1,7 +1,7 @@
 /*
     Esta estrutura é retornada pela função open e representa os metadados necessários para acessar o arquivo no disco
 */
-struct FAT32__fopen {
+struct XFILE {
     unsigned char filename[11];
     unsigned int tamanhoArquivo;
     unsigned int qnt_cluster;

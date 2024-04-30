@@ -78,72 +78,23 @@ void apagarArquivo( char* nomeArquivo, char* nomeDisco ){
 */
 void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
 
-    // abrir o disco e procurar um cluster vazio para iniciar a gravação do arquivo
-    FILE *disco = fopen(nomeDisco,"r+b");
-    int clusterVazio = acharClusterVazio(disco,-1);
+    int bytes_lidos;
+    unsigned char *bufferLeituraEscrita = (unsigned char *)malloc( 512 * sizeof(unsigned char) );
 
-    // pegar arquivo e colocar em uma lista de bytes
-    FILE *file = fopen(nomeDoArquivo,"rb");
-    fseek(file, 0, SEEK_END);
-    int tamanhoArquivo = ftell(file);
-    unsigned char *arquivo = (unsigned char *)malloc( tamanhoArquivo * sizeof(unsigned char) );
-    fseek(file, 0, SEEK_SET);
-    fread(&arquivo[0], sizeof(char), tamanhoArquivo, file);
-    fclose(file);
 
-    // criar entradaDiretorio para o arquivo
-    struct entradaDiretorio entrada;
-    strcpy(entrada.filename,nomeGravacao);
-    entrada.atributos = 0x20;
-    entrada.startCluster = clusterVazio;
-    entrada.fileSize = tamanhoArquivo;
-
-    // colocar a entradaDiretorio no diretorio root
-    int entradaLivreNoRoot = acharEntradaVazia(disco);
-    int inicioRoot = ( 32 * 512 ) + 1024 + ( 32 * entradaLivreNoRoot);
-    fseek(disco, inicioRoot, SEEK_SET);
-    fwrite(&entrada,sizeof(struct entradaDiretorio),1,disco);
-
-    // colocar os bytes do arquivo no cluster
-    int qnt_cluster = tamanhoArquivo / 512;
-    if(tamanhoArquivo % 512){
-        qnt_cluster++;
-    }
-    int j = 0;
-
-    for (int i = 0; i < qnt_cluster; i++){
-        
-        // gravando no cluster
-        int inicioCluster = ( 32 * 512 ) + 1024 + ( 512 * clusterVazio );
-        fseek(disco, inicioCluster, SEEK_SET);
-        fwrite(&arquivo[j],sizeof(unsigned char),512,disco);
-
-        // quantidade de bytes sendo gravados por vez
-        j += 512;
-
-        // configurar a FAT do cluster
-        int inicioFatCluster = ( 512 * 32 ) + ( 4 * clusterVazio );
-        fseek(disco, inicioFatCluster, SEEK_SET);
-
-        struct entradaFAT entradaDaFat;
-        fread(&entradaDaFat, sizeof(struct entradaFAT), 1, disco);
-
-        if (i == qnt_cluster-1){
-            // ultima parte do arquivo
-            entradaDaFat.ponteiro = 0xffffffff;
-            fseek(disco, inicioFatCluster, SEEK_SET);
-            fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,disco);
-        }
-        else{     
-            // parte normal. OBS: É  necessário passar o numero desse cluster para ser descartado da busca por cluster vazios.
-            // Isso é necessário pois o cluster ainda não foi gravado, então aparecera como vazio na busca
-            clusterVazio = acharClusterVazio(disco,clusterVazio);
-            entradaDaFat.ponteiro = clusterVazio; 
-            fseek(disco, inicioFatCluster, SEEK_SET);    
-            fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,disco);
+    //testes de criacao de arquivo usando a chamada de sistema
+    FILE * arquivoEntrada = fopen(nomeDoArquivo,"rb");
+    struct XFILE fileNoFat = xopen(nomeGravacao,"FAT.img");
+    while(true){
+        bytes_lidos = fread(&bufferLeituraEscrita[0], 1, 200, arquivoEntrada);
+        if(!bytes_lidos){
+            break;
+        }else{
+            xwrite(bufferLeituraEscrita,1,bytes_lidos,&fileNoFat);
         }
     }
-    fclose(disco);
+    fclose(arquivoEntrada);
+    xclose(&fileNoFat);
 
 }
 
@@ -155,94 +106,25 @@ void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
         disco: Uma string com o nome de um disco FAT32
         nomeFinalArquivo: uma string com o nome que será usado para gravar o arquivo fora do disco FAT32.
 */
-void lerArquivo(char* nomeArquivo, char* nomeDiscoFAT, char* nomeFinalArquivo){
-    
-    // acessar a tabela do diretorio root
-    int inicioEntradas = ( 32 * 512 ) + 1024;
-    FILE *disco = fopen(nomeDiscoFAT,"r+b");
-    
+void copiarArquivo(char* nomeArquivo, char* nomeDiscoFAT, char* nomeFinalArquivo){
 
-    /* 
-      criar struct de entrada apartir das entradas da root
-      Para isso é necessário procurar o arquivo pelo nome entre as entrada da root 
-    */
-    int quantidadeEntradas = 0;
-    int tamanhoArquivo;
-    int posicaoCluster;
-    while( quantidadeEntradas <= 16 ){
+    //buffer usado para leitura e escrita e numero de bytes da leitura
+    int bytes_lidos;
+    unsigned char *bufferLeituraEscrita = (unsigned char *)malloc( 512 * sizeof(unsigned char) );
 
-        fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
-
-        // Diminuir o tamanho do nome do aqruivo para 11
-        char nome[11];
-        strncpy(nome, entradaTeste.filename, 11);
-        int comparacao = strcmp(nome,nomeArquivo);
-
-        // comparando o nome do arquivo com o nome da entrada para ver se são iguais
-        // OBS: strcmp retorna zero quando as strings são iguais. Diferente doque poderiamos pensar.
-        if(comparacao == 0){
-            tamanhoArquivo = entradaTeste.fileSize;
-            posicaoCluster = entradaTeste.startCluster;
+    //testar a copia de um arquivo do disco FAT32 para fora
+    FILE * arquivoSaida = fopen(nomeFinalArquivo,"wb");
+    struct XFILE fileDentro = xopen(nomeArquivo,nomeDiscoFAT);
+    while(true){
+        bytes_lidos  = xread( &bufferLeituraEscrita[0], 1, 512, &fileDentro );
+        if(!bytes_lidos){
             break;
+        }else{
+            fwrite(bufferLeituraEscrita, sizeof(unsigned char), bytes_lidos, arquivoSaida);
         }
-        else{
-            inicioEntradas += 32;
-        }
-        quantidadeEntradas++;
     }
-    
-    // calcular os parametros para pegar os clusters do arquivo
-    int qnt_cluster = tamanhoArquivo / 512;
-    if(tamanhoArquivo % 512){
-        qnt_cluster++;
-    }
-    int inicioClusters = ( 512 * 32 ) + 1024;
-
-    // abrir buffer do arquivo e ir jogando as partes dos clusters do arquivo e jogando dentro do arquivo
-    FILE *arquivoSaida = fopen(nomeFinalArquivo,"wb");
-    for (int i = 0; i < qnt_cluster; i++){
-        
-        // pegar os bytes do arquivo no cluster
-        int inicioCluster =  inicioClusters + ( 512 * posicaoCluster );
-        int quantidadeBytes;
-
-        if (i == qnt_cluster -1){          
-            quantidadeBytes = tamanhoArquivo % 512;
-            unsigned char bufferBytesCluster[quantidadeBytes];
-            fseek(disco, inicioCluster, SEEK_SET);
-            fread(bufferBytesCluster, 1,quantidadeBytes,disco);
-
-            //fseek(arquivoSaida,0, SEEK_END);
-            fwrite(bufferBytesCluster, 1,quantidadeBytes, arquivoSaida);
-        }
-        else{
-            quantidadeBytes = 512;
-            unsigned char bufferBytesCluster[quantidadeBytes];
-            fseek(disco, inicioCluster, SEEK_SET);
-            fread(bufferBytesCluster,1,quantidadeBytes,disco);
-
-            //fseek(arquivoSaida,0, SEEK_END);
-            fwrite(bufferBytesCluster, 1,quantidadeBytes, arquivoSaida);
-        }
-
-        //printf("lendo %d bytes do cluster %d\n",quantidadeBytes,posicaoCluster);
-
-
-        // verificar o proximo cluster na tabela FAT do arquivo
-        int inicioFatCluster = ( 512 * 32 ) + ( 4 * posicaoCluster);
-        struct entradaFAT proximoCluster;
-        fseek(disco, inicioFatCluster, SEEK_SET);
-        fread(&proximoCluster, sizeof(struct entradaFAT), 1, disco);
-        posicaoCluster = proximoCluster.ponteiro;
-
-    }
-
-    // fechar os arquivos
     fclose(arquivoSaida);
-    fclose(disco);
-
+    xclose(&fileDentro);
 }
 
 

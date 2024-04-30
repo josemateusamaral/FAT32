@@ -3,7 +3,7 @@
     Parametros:
         disco: uma imagem de um disco FAT32
 */
-void terminarl__ls( char* nomeDisco ){
+void terminal__ls( char* nomeDisco ){
 
     // acessar a tabela do diretorio root
     int inicioRoot = ( 32 * 512 ) + 1024;

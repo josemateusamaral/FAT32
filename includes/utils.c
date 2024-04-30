@@ -239,7 +239,7 @@ void printarFat(char * nomeDisco) {
 /*
 printar a struct de de chamada de sistemas open
 */
-void printarOpen(struct FAT32__fopen file){
+void printarOpen(struct XFILE file){
     printf("nome arquivo: %s\n",file.filename);
     printf("tamanho arquivo: %d\n",file.tamanhoArquivo);
     printf("quantidade clusters: %d\n",file.qnt_cluster);
