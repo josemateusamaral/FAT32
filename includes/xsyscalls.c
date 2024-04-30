@@ -290,3 +290,73 @@ void xclose(struct XFILE * file){
     fflush(file->disco);
     fclose(file->disco);
 }
+
+
+/*
+    Remover arquivo
+    Parametros:
+        nomeArquivo: String contendo o nome do arquivo para ser apagado
+*/
+void xremove( char* nomeArquivo, char* nomeDisco ){
+
+    // acessar a tabela do diretorio root
+    int inicioEntradas = ( 32 * 512 ) + 1024;
+    FILE *disco = fopen(nomeDisco,"r+b");
+    struct entradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
+
+    /* 
+      criar struct de entrada apartir das entradas da root
+      Para isso é necessário procurar o arquivo pelo nome entre as entrada da root 
+    */
+    int proximoCluster;
+    int tamanhoArquivo;
+    int quantidadeEntradas = 0;
+
+    while( quantidadeEntradas <= 16 ){
+
+        fseek(disco, inicioEntradas, SEEK_SET);
+        struct entradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
+
+        // Diminuir o tamanho do nome do arquivo para 11
+        char nome[11];
+        strncpy(nome, entradaTeste.filename, 11);
+        int comparacao = strcmp(nome,nomeArquivo);
+
+        // comparando o nome do arquivo com o nome da entrada para ver se são iguais
+        // OBS: strcmp retorna zero quando as strings são iguais. Diferente doque poderiamos pensar.
+        if(comparacao == 0){
+            proximoCluster = entradaTeste.startCluster;
+            tamanhoArquivo = entradaTeste.fileSize;
+            fseek(disco, inicioEntradas, SEEK_SET);
+            fwrite(&entradaLimpa,sizeof(struct entradaDiretorio),1,disco);
+            break;
+        }
+        else{
+            inicioEntradas += 32;
+        }
+        quantidadeEntradas++;
+    }
+
+    // limpar todas as entradas FAT referentes aos clusters desse arquivo
+    struct entradaFAT entradaLimpaFAT;
+    memset(&entradaLimpaFAT, 0, sizeof(struct entradaFAT));
+
+    int qnt_cluster = tamanhoArquivo / 512;
+    if(tamanhoArquivo % 512){
+        qnt_cluster++;
+    }
+    for (int i = 0; i < qnt_cluster; i++){
+        int posicaoEntradaCluster = ( 512 * 32 ) + ( 4 * proximoCluster );
+        fseek(disco, posicaoEntradaCluster, SEEK_SET);
+        struct entradaFAT testeEntrada;
+        fread(&testeEntrada, sizeof(struct entradaFAT), 1, disco);
+        fseek(disco, posicaoEntradaCluster, SEEK_SET);
+        proximoCluster = testeEntrada.ponteiro;
+        fwrite(&entradaLimpaFAT,sizeof(struct entradaFAT),1,disco);
+    }
+
+    fclose(disco);
+
+}

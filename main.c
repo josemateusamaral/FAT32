@@ -29,7 +29,8 @@ int main() {
 
 
 
-
+    //chamada de sistema remove
+    xremove("letra2  png","FAT.img");
 
     //chamada de sistema fopen
     struct XFILE file = xopen("letra   png","FAT.img");
@@ -97,12 +98,10 @@ int main() {
     fclose(arquivoSaida);
     xclose(&fileDentro);
 
-
     
     
     
     terminal__ls("FAT.img");
-
 
 
     return 0;
