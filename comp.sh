@@ -7,8 +7,3 @@ rm -rf temps/*
 # compilar programa
 echo "compilando programa..."
 gcc -o Teste main.c
-
-#rodar programa
-echo "executando programa..."
-./Teste
-hexdump -v -C FAT.img > temps/dump.txt

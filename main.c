@@ -21,10 +21,10 @@ int main() {
     criarDisco("FAT.img",512,128,1);
 
     // gravar o arquivo teste.txt no arquivo da imagem do FAT32
-    gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra   png");
-    gravarArquivo("arquivosTeste/teste.txt","FAT.img","teste   txt");
-    gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra2  png");
-    copiarArquivo("letra   png","FAT.img","arquivosTeste/imagem.png");
+    gravarArquivo("data/letra-a.png","FAT.img","letra   png");
+    gravarArquivo("data/teste.txt","FAT.img","teste   txt");
+    gravarArquivo("data/letra-a.png","FAT.img","letra2  png");
+    copiarArquivo("letra   png","FAT.img","temps/imagem.png");
 
     //chamada de sistema remove
     xremove("letra2  png","FAT.img");
@@ -67,7 +67,7 @@ int main() {
 
 
     //testes de criacao de arquivo usando a chamada de sistema
-    FILE * arquivoEntrada = fopen("arquivosTeste/letra-a.png","rb");
+    FILE * arquivoEntrada = fopen("data/letra-a.png","rb");
     struct XFILE fileNoFat = xopen("arquivo png","FAT.img");
     while(true){
         bytes_lidos = fread(&bufferLeituraEscrita[0], 1, 200, arquivoEntrada);
@@ -82,7 +82,7 @@ int main() {
 
 
     //testar a copia de um arquivo do disco FAT32 para fora
-    FILE * arquivoSaida = fopen("arquivoSaida.png","wb");
+    FILE * arquivoSaida = fopen("temps/arquivoSaida.png","wb");
     struct XFILE fileDentro = xopen("arquivo png","FAT.img");
     while(true){
         bytes_lidos  = xread( &bufferLeituraEscrita[0], 1, 512, &fileDentro );
