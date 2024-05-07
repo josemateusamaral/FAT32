@@ -26,9 +26,6 @@ int main() {
     gravarArquivo("arquivosTeste/letra-a.png","FAT.img","letra2  png");
     copiarArquivo("letra   png","FAT.img","arquivosTeste/imagem.png");
 
-
-
-
     //chamada de sistema remove
     xremove("letra2  png","FAT.img");
 

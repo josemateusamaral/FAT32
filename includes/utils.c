@@ -1,3 +1,87 @@
+/*
+    formatar o nome de um arquivo para o formato do FAT32
+*/
+char * aplicarFormatacaoNome(char * nomeArquivo) {
+    char nome[9]; // Espaço para 8 caracteres + caractere nulo
+    char extensao[4]; // Tamanho máximo da extensão do arquivo (defina como necessário)
+
+    int tamanho = strlen(nomeArquivo);
+    int i = 0;
+    int j = 0;
+
+    // Copiar o nome do arquivo para 'nome'
+    while (nomeArquivo[i] != '.' && i < 8) {
+        nome[i] = nomeArquivo[i];
+        i++;
+    }
+    if( i < 8 ){
+        int caracteresFaltando = 8 - i;
+        int posicaoNome = i;
+        for( int caractereFaltando = 0 ; caractereFaltando < caracteresFaltando ; caractereFaltando++ ){
+            nome[posicaoNome] = ' ';
+            posicaoNome++;
+        }
+    }
+    i++;
+
+    for( ; j < 3 ; j++,i++ ){
+        extensao[j] = nomeArquivo[i];
+    }
+    j++;
+
+    // Extrair a extensão do arquivo
+    char nomeFormatado[12]; 
+    for( int caractere = 0; caractere < 8 ; caractere++ ){
+        nomeFormatado[caractere] = nome[caractere];
+    }
+    for( int caractere = 0, posicaoFinal = 8; caractere < 3 ; caractere++, posicaoFinal++  ){
+        nomeFormatado[posicaoFinal] = extensao[caractere];
+        if(caractere == 2){
+            posicaoFinal++;
+            nomeFormatado[posicaoFinal] = '\0';
+        }
+    }
+    
+    char * retorno = (char *)(nomeFormatado);
+
+    return retorno;
+}
+
+/* 
+    remover a formatacao de nome arquivo de uma entradaDeDiretorio
+*/
+char * removerFormatacaoNome( char * nomeFormatado ){
+
+    // array para conter todos os caracteres do nome apos a retirada da formatacao
+    char nomeSemFormatacao[20];
+
+    // pegar o nome do arquivo sem os espacoes e a extensao
+    int i = 0;
+    int j = 0;
+    for( ; i < 8 ; i++ ){
+        if( nomeFormatado[i] != ' '){
+            nomeSemFormatacao[j] = nomeFormatado[i];
+            j++;
+        }
+    }
+    nomeSemFormatacao[j] = '.';
+    j++;
+
+    //pegar a extensao do arquivo
+    for( ; i < 11 ; i++ ){
+        if( nomeFormatado[i] != ' '){
+            nomeSemFormatacao[j] = nomeFormatado[i];
+            j++;
+        }
+    }
+    nomeSemFormatacao[j] = '\0';
+    
+    //converter array de chars em uma string
+    char * retorno = (char *)(nomeSemFormatacao);    
+    return retorno;
+
+}
+
 
 /*
     Verificar se o arquivo já existe ou deve ser criado
@@ -283,45 +367,5 @@ unsigned char* clusterToArray( int numeroCluster, FILE * disco, int tamanhoClust
     fseek(disco, posicaoCluster, SEEK_SET);
     fread(&cluster[0], sizeof(unsigned char), tamanhoCluster, disco);
     return cluster;
-}
-
-
-/*
-    formatar nome de arquivo para entrada de diretorio
-*/
-char * formatarNomeDeArquivo( char * nomeArquivo ){
-
-    /*
-    int tamanhoNome = strlen(nomeArquivo);
-    printf("tamanho da string: %ld\n",tamanhoNome);
-
-    //pegar a extensao do arquivo
-    char extensao[3];
-    strncpy(extensao, nomeArquivo + (tamanhoNome-3), 3);
-    printf("extensao: %s\n",extensao);
-
-    //pegar nome do arquivo sem a extensao
-    char nomeSemExtensao[8];
-    strncpy(nomeSemExtensao, nomeArquivo, (tamanhoNome-4));
-    printf("nome sem extensao: %s\n",nomeSemExtensao);
-
-    //criar os espaços para colocar entre o nome e a extensao
-    int tamanhoEspaco = 8 - strlen(nomeSemExtensao);
-    printf("tamanho espaco: %d\n",tamanhoEspaco);
-    char espaco[tamanhoEspaco];
-    for( int i = 0 ; i < tamanhoEspaco ; i++ ){
-        espaco[i] = " ";
-    }
-
-
-    //montar nome formatado
-    
-    sprintf(nomeFormatado, "%s%s%s", nomeSemExtensao, espaco,extensao);
-
-
-    printf("nome formatado final: %s\n",nomeFormatado);
-    */
-    char *nomeFormatado = (char *)malloc(12 * sizeof(char));
-    return nomeFormatado;
 }
 

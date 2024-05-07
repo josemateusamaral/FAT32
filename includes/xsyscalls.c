@@ -360,3 +360,36 @@ void xremove( char* nomeArquivo, char* nomeDisco ){
     fclose(disco);
 
 }
+
+
+
+
+/*
+    mudar o diretorio de trabalho
+    Esta função permite cinfigurar o diretorio de trabalho para usar caminho relativo
+*/
+void xchdir( char * path ){
+
+}
+
+/*
+    criar diretorio
+*/
+void xmkdir( char * path ){
+    
+}
+
+/*
+    remover diretorio
+*/
+void xrmdir( char * path ){
+
+}
+
+
+/*
+    montar um disco
+*/
+void xmount( char * path ){
+
+}
