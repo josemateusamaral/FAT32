@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 #include "includes/xtypes.c"
+#include "includes/xglobals.c"
+#include "includes/xutils.c"
 #include "includes/xsyscalls.c"
 #include "includes/terminal.c"
 #include "includes/xsystools.c"
@@ -97,9 +99,14 @@ int main() {
 
     
     
+    xmkdir("pasta");
     
-    terminal__ls("FAT.img");
+    terminal__ls();
 
+    xchdir("pasta");
+    xmkdir("mais");
+
+    terminal__ls();
 
     return 0;
 

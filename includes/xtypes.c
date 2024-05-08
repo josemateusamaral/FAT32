@@ -1,3 +1,6 @@
+
+
+
 /*
     Esta estrutura é retornada pela função open e representa os metadados necessários para acessar o arquivo no disco
 */
@@ -10,6 +13,7 @@ struct XFILE {
     int *clusters; // Um ponteiro para um array de inteiros
 };
 typedef struct XFILE XFILE;
+
 
 
 

@@ -166,6 +166,7 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
         Criando tabela Root
     */
     for( int i = 1 ; i < 16 ; i++ ){
+
         EntradaDiretorio entrada;
         memset(&entrada, 0, sizeof(EntradaDiretorio));
         fwrite(&entrada,sizeof(EntradaDiretorio),1,file);
@@ -186,5 +187,18 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
 
     // fechar o arquivo de imagem
     fclose(file);
+
+    //criar entrada do diretorio
+    FILE * discoFAT = fopen(nomeDoArquivo,"r+w");
+    int inicioRoot = ( 512 * 32 ) + 1024;
+    fseek(discoFAT,inicioRoot, SEEK_SET);
+    EntradaDiretorio entrada;
+    memset(&entrada, 0, sizeof(EntradaDiretorio));
+    strcpy(entrada.filename,".");
+    entrada.atributos = 0x40;
+    entrada.startCluster = 0;
+    entrada.fileSize = 512;
+    fwrite(&entrada,sizeof(EntradaDiretorio),1,discoFAT);
+    fclose(discoFAT);
 
 }

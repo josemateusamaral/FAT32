@@ -1,4 +1,28 @@
 /*
+    printar xFILE
+*/
+void printXFILE( XFILE file ){
+    printf("\nnome: %s\n",file.filename);
+    printf("tamanho: %d\n",file.tamanhoArquivo);
+    printf("clusters: ");
+    for( int i = 0 ; i < file.qnt_cluster ; i++ ){
+        printf(" %d",file.clusters[i]);
+    }
+    printf("\nposicao: %d\n",file.posicaoNoArquivo);
+}
+
+
+/*
+    Gravar fat
+*/
+void gravarFat( int numeroFat, int ponteiro){
+    fseek(xdisco,(32*512)+(4 * numeroFat),SEEK_SET);
+    fwrite(&ponteiro,1,sizeof(int),xdisco);
+    fflush(xdisco);
+}
+
+
+/*
     formatar o nome de um arquivo para o formato do FAT32
 */
 
@@ -87,7 +111,7 @@ char * removerFormatacaoNome( char * nomeFormatado ){
 /*
     Verificar se o arquivo já existe ou deve ser criado
 */
-int arquivoExiste( FILE* disco, char * nomeArquivo){
+int arquivoExiste( char * nomeArquivo){
     // acessar a tabela do diretorio root
     int inicioEntradas = ( 32 * 512 ) + 1024;
     EntradaDiretorio entradaLimpa;
@@ -102,9 +126,9 @@ int arquivoExiste( FILE* disco, char * nomeArquivo){
 
     while( quantidadeEntradas <= 16 ){
 
-        fseek(disco, inicioEntradas, SEEK_SET);
+        fseek(xdisco, inicioEntradas, SEEK_SET);
         EntradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, xdisco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -130,7 +154,7 @@ int arquivoExiste( FILE* disco, char * nomeArquivo){
     Parametros:
         file: É o buffer da imagem do disco FAT32 onde os clusters estão.
 */
-int acharClusterVazio( FILE* disco, int descartar){
+int acharClusterVazio( int descartar){
 
     int posicao = 1;
     int inicioFat = ( 512 * 32 ) + 4;
@@ -142,9 +166,9 @@ int acharClusterVazio( FILE* disco, int descartar){
             continue;
         }
 
-        fseek(disco,inicioFat, SEEK_SET);
+        fseek(xdisco,inicioFat, SEEK_SET);
         EntradaFAT entrada;
-        fread(&entrada, sizeof(EntradaFAT), 1, disco);
+        fread(&entrada, sizeof(EntradaFAT), 1, xdisco);
 
         if(!entrada.ponteiro){
             break;
@@ -164,15 +188,16 @@ int acharClusterVazio( FILE* disco, int descartar){
     Parametros:
         disco: buffer de uma imagem de disco FAT32
 */
-int acharEntradaVazia( FILE* disco ){
-    int inicioRoot = ( 512 * 32 ) + 1024;
+int acharEntradaVazia( ){
+
+    int inicioRoot = ( 512 * 32 ) + 1024 + (diretorioAtual.clusters[0]*512);
     int posicao = 0;
 
     while(1){
 
-        fseek(disco,inicioRoot, SEEK_SET);
+        fseek(xdisco,inicioRoot, SEEK_SET);
         EntradaDiretorio entrada;
-        fread(&entrada, sizeof(EntradaDiretorio), 1, disco);
+        fread(&entrada, sizeof(EntradaDiretorio), 1, xdisco);
 
         if(entrada.atributos == 0){
             break;
@@ -189,9 +214,9 @@ int acharEntradaVazia( FILE* disco ){
 /*
     Pegar a posicao de uma entrada de diretorio
 */
-int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
+int pegarPosicaoEntradaDeDiretorio( char * nomeArquivo){
     // acessar a tabela do diretorio root
-    int inicioEntradas = ( 32 * 512 ) + 1024;
+    int inicioEntradas = ( 32 * 512 ) + 1024 + (diretorioAtual.clusters[0]*512);
     EntradaDiretorio entradaLimpa;
     memset(&entradaLimpa, 0, sizeof(EntradaDiretorio));
 
@@ -205,9 +230,9 @@ int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
 
     while( quantidadeEntradas <= 16 ){
 
-        fseek(disco, inicioEntradas, SEEK_SET);
+        fseek(xdisco, inicioEntradas, SEEK_SET);
         EntradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, xdisco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -231,8 +256,10 @@ int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
 /*
     Pegar entrada de um arquivo
 */
-EntradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
+EntradaDiretorio pegarEntradaDeDiretorio( char * nomeArquivo ){
     // acessar a tabela do diretorio root
+    //int teste = diretorioAtual.clusters[0];
+    //printf("pegando entrada...%d\nqtd clusters: %d",,diretorioAtual.qnt_cluster);
     int inicioEntradas = ( 32 * 512 ) + 1024;
     EntradaDiretorio entradaLimpa;
     memset(&entradaLimpa, 0, sizeof(EntradaDiretorio));
@@ -241,17 +268,18 @@ EntradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
       criar struct de entrada apartir das entradas da root
       Para isso é necessário procurar o arquivo pelo nome entre as entrada da root 
     */
-    int proximoCluster;
     int quantidadeEntradas = 0;
 
     while( quantidadeEntradas <= 16 ){
 
-        fseek(disco, inicioEntradas, SEEK_SET);
+        fseek(xdisco, inicioEntradas, SEEK_SET);
         EntradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
+        memset(&entradaTeste, 0, sizeof(EntradaDiretorio));
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, xdisco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
+        memset(&nome, 0,11);
         strncpy(nome, entradaTeste.filename, 11);
         int comparacao = strcmp(nome,nomeArquivo);
 
@@ -265,6 +293,8 @@ EntradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
         }
         quantidadeEntradas++;
     }
+
+    return entradaLimpa;
 }
 
 
@@ -289,11 +319,11 @@ unsigned char* genSetorVazio( int tamanhoSetores ) {
 /*
     Colocar a tabela FAT dentro de um array para ser mais facil de analizar
 */
-int* fatToArray(FILE * disco) {
+int* fatToArray() {
     int* fat = malloc(128 * sizeof(unsigned int));
     int inicioFat = 512 * 32;
-    fseek(disco, inicioFat, SEEK_SET);
-    fread(&fat[0], sizeof(unsigned int), 128, disco);
+    fseek(xdisco, inicioFat, SEEK_SET);
+    fread(&fat[0], sizeof(unsigned int), 128, xdisco);
     //printf("\nSTART FAT\n");
     //for( int i = 0 ; i < 128 ; i++ ){
     //    printf(" %d ",fat[i]);
@@ -306,18 +336,16 @@ int* fatToArray(FILE * disco) {
 /*
     Colocar a tabela FAT dentro de um array para ser mais facil de analizar
 */
-void printarFat(char * nomeDisco) {
-    FILE * disco = fopen(nomeDisco,"r");
+void printarFat() {
     int* fat = malloc(128 * sizeof(unsigned int));
     int inicioFat = 512 * 32;
-    fseek(disco, inicioFat, SEEK_SET);
-    fread(&fat[0], sizeof(unsigned int), 128, disco);
+    fseek(xdisco, inicioFat, SEEK_SET);
+    fread(&fat[0], sizeof(unsigned int), 128, xdisco);
     printf("\nSTART FAT\n");
     for( int i = 0 ; i < 128 ; i++ ){
         printf(" %d ",fat[i]);
     }
     printf("\nEND FAT\n");
-    fclose(disco);
 }
 
 
@@ -362,11 +390,14 @@ void printEntradaDiretorio(EntradaDiretorio file){
     Parametros:
         tamanhoSetores: indica a quantidade de bytes contidos dentro do setor.
 */
-unsigned char* clusterToArray( int numeroCluster, FILE * disco, int tamanhoCluster ) {
+unsigned char* clusterToArray( int numeroCluster, int tamanhoCluster ) {
     unsigned char *cluster = (unsigned char *)malloc( tamanhoCluster * sizeof(unsigned char) );
     int posicaoCluster = ( 512 * 32 ) + 1024 + ( tamanhoCluster * numeroCluster);
-    fseek(disco, posicaoCluster, SEEK_SET);
-    fread(&cluster[0], sizeof(unsigned char), tamanhoCluster, disco);
+    fseek(xdisco, posicaoCluster, SEEK_SET);
+    fread(&cluster[0], sizeof(unsigned char), tamanhoCluster, xdisco);
     return cluster;
 }
+
+
+
 
