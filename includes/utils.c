@@ -1,6 +1,7 @@
 /*
     formatar o nome de um arquivo para o formato do FAT32
 */
+
 char * aplicarFormatacaoNome(char * nomeArquivo) {
     char nome[9]; // Espaço para 8 caracteres + caractere nulo
     char extensao[4]; // Tamanho máximo da extensão do arquivo (defina como necessário)
@@ -89,8 +90,8 @@ char * removerFormatacaoNome( char * nomeFormatado ){
 int arquivoExiste( FILE* disco, char * nomeArquivo){
     // acessar a tabela do diretorio root
     int inicioEntradas = ( 32 * 512 ) + 1024;
-    struct entradaDiretorio entradaLimpa;
-    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
+    EntradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(EntradaDiretorio));
 
     /* 
       criar struct de entrada apartir das entradas da root
@@ -102,8 +103,8 @@ int arquivoExiste( FILE* disco, char * nomeArquivo){
     while( quantidadeEntradas <= 16 ){
 
         fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
+        EntradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -142,8 +143,8 @@ int acharClusterVazio( FILE* disco, int descartar){
         }
 
         fseek(disco,inicioFat, SEEK_SET);
-        struct entradaFAT entrada;
-        fread(&entrada, sizeof(struct entradaFAT), 1, disco);
+        EntradaFAT entrada;
+        fread(&entrada, sizeof(EntradaFAT), 1, disco);
 
         if(!entrada.ponteiro){
             break;
@@ -170,8 +171,8 @@ int acharEntradaVazia( FILE* disco ){
     while(1){
 
         fseek(disco,inicioRoot, SEEK_SET);
-        struct entradaDiretorio entrada;
-        fread(&entrada, sizeof(struct entradaDiretorio), 1, disco);
+        EntradaDiretorio entrada;
+        fread(&entrada, sizeof(EntradaDiretorio), 1, disco);
 
         if(entrada.atributos == 0){
             break;
@@ -191,8 +192,8 @@ int acharEntradaVazia( FILE* disco ){
 int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
     // acessar a tabela do diretorio root
     int inicioEntradas = ( 32 * 512 ) + 1024;
-    struct entradaDiretorio entradaLimpa;
-    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
+    EntradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(EntradaDiretorio));
 
     /* 
       criar struct de entrada apartir das entradas da root
@@ -205,8 +206,8 @@ int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
     while( quantidadeEntradas <= 16 ){
 
         fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
+        EntradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -230,11 +231,11 @@ int pegarPosicaoEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
 /*
     Pegar entrada de um arquivo
 */
-struct entradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
+EntradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo){
     // acessar a tabela do diretorio root
     int inicioEntradas = ( 32 * 512 ) + 1024;
-    struct entradaDiretorio entradaLimpa;
-    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
+    EntradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(EntradaDiretorio));
 
     /* 
       criar struct de entrada apartir das entradas da root
@@ -246,8 +247,8 @@ struct entradaDiretorio pegarEntradaDeDiretorio( FILE* disco, char * nomeArquivo
     while( quantidadeEntradas <= 16 ){
 
         fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
+        EntradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -323,7 +324,7 @@ void printarFat(char * nomeDisco) {
 /*
 printar a struct de de chamada de sistemas open
 */
-void printarOpen(struct XFILE file){
+void printarOpen(XFILE file){
     printf("nome arquivo: %s\n",file.filename);
     printf("tamanho arquivo: %d\n",file.tamanhoArquivo);
     printf("quantidade clusters: %d\n",file.qnt_cluster);
@@ -339,7 +340,7 @@ void printarOpen(struct XFILE file){
 /*
 printar a struct de entradaDeDiretorio
 */
-void printEntradaDiretorio(struct entradaDiretorio file){
+void printEntradaDiretorio(EntradaDiretorio file){
 
     printf("nome arquivo: %s\n",file.filename);
     printf("atributos: %02X\n",file.atributos);

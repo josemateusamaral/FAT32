@@ -9,6 +9,7 @@ struct XFILE {
     FILE* disco;
     int *clusters; // Um ponteiro para um array de inteiros
 };
+typedef struct XFILE XFILE;
 
 
 
@@ -32,6 +33,7 @@ struct entradaDiretorio{
     unsigned short startCluster;    // 26-27   Starting cluster (0 for an empty file)
     unsigned int fileSize;          // 28-31   Filesize in bytes
 };
+typedef struct entradaDiretorio EntradaDiretorio;
 
 /*
     A struct entradaFAT serve para apontar os clusters na FAT32
@@ -39,6 +41,7 @@ struct entradaDiretorio{
 struct entradaFAT{
     unsigned int ponteiro;
 };
+typedef struct entradaFAT EntradaFAT;
 
 
 /*

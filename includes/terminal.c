@@ -14,8 +14,8 @@ void terminal__ls( char* nomeDisco ){
     for( int i = 0 ; i < 16 ; i++ ){
 
         // colocar a entrada do diretorio em uma struct para analiza-la
-        struct entradaDiretorio entrada;
-        fread(&entrada, sizeof(struct entradaDiretorio), 1, disco);
+        EntradaDiretorio entrada;
+        fread(&entrada, sizeof(EntradaDiretorio), 1, disco);
         
         //printar ou não printar ? eis a questão.
         if( entrada.startCluster != 0 ){

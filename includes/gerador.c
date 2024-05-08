@@ -6,7 +6,8 @@
         nomeDoArquivo: contem uma string que indica o arquivo a ser gravado no disco
         nomeDisco: contem uma string indicando o nome do disco para o qual a imagem sera gravada
 */
-void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
+
+void gravarArquivo( char* nomeDoArquivo, char* nomeGravacao ) {
 
     int bytes_lidos;
     unsigned char *bufferLeituraEscrita = (unsigned char *)malloc( 512 * sizeof(unsigned char) );
@@ -14,7 +15,7 @@ void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
 
     //testes de criacao de arquivo usando a chamada de sistema
     FILE * arquivoEntrada = fopen(nomeDoArquivo,"rb");
-    struct XFILE fileNoFat = xopen(nomeGravacao,"FAT.img");
+    XFILE fileNoFat = xopen(nomeGravacao);
     while(true){
         bytes_lidos = fread(&bufferLeituraEscrita[0], 1, 200, arquivoEntrada);
         if(!bytes_lidos){
@@ -36,7 +37,7 @@ void gravarArquivo( char* nomeDoArquivo, char* nomeDisco, char* nomeGravacao ) {
         disco: Uma string com o nome de um disco FAT32
         nomeFinalArquivo: uma string com o nome que será usado para gravar o arquivo fora do disco FAT32.
 */
-void copiarArquivo(char* nomeArquivo, char* nomeDiscoFAT, char* nomeFinalArquivo){
+void copiarArquivo(char* nomeArquivo, char* nomeFinalArquivo){
 
     //buffer usado para leitura e escrita e numero de bytes da leitura
     int bytes_lidos;
@@ -44,7 +45,7 @@ void copiarArquivo(char* nomeArquivo, char* nomeDiscoFAT, char* nomeFinalArquivo
 
     //testar a copia de um arquivo do disco FAT32 para fora
     FILE * arquivoSaida = fopen(nomeFinalArquivo,"wb");
-    struct XFILE fileDentro = xopen(nomeArquivo,nomeDiscoFAT);
+    XFILE fileDentro = xopen(nomeArquivo);
     while(true){
         bytes_lidos  = xread( &bufferLeituraEscrita[0], 1, 512, &fileDentro );
         if(!bytes_lidos){
@@ -145,17 +146,17 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
         O numero de entradas é igual ao dobro do numero de clusters pois existem duas tabelas FAT32.
         OBS: O primeiro cluster é ocupado pelo diretorio root nas duas tabelas
     */
-    struct entradaFAT entradaRoot;
-    memset(&entradaRoot, 0, sizeof(struct entradaFAT));
+    EntradaFAT entradaRoot;
+    memset(&entradaRoot, 0, sizeof(EntradaFAT));
     entradaRoot.ponteiro = 0xffffffff;
     for( int j = 0 ; j < 2 ; j++ ){
         for( int i = 0 ; i < ( 512 / 4 ); i++ ){
             if( i == 0 ){
-                fwrite(&entradaRoot,sizeof(struct entradaFAT),1,file);
+                fwrite(&entradaRoot,sizeof(EntradaFAT),1,file);
             }else{
-                struct entradaFAT entrada;
-                memset(&entrada, 0, sizeof(struct entradaFAT));
-                fwrite(&entrada,sizeof(struct entradaFAT),1,file);
+                EntradaFAT entrada;
+                memset(&entrada, 0, sizeof(EntradaFAT));
+                fwrite(&entrada,sizeof(EntradaFAT),1,file);
             }
             
         }
@@ -165,9 +166,9 @@ void criarDisco(char* nomeDoArquivo, int tamanhoSetores, int quantidadeClusters,
         Criando tabela Root
     */
     for( int i = 1 ; i < 16 ; i++ ){
-        struct entradaDiretorio entrada;
-        memset(&entrada, 0, sizeof(struct entradaDiretorio));
-        fwrite(&entrada,sizeof(struct entradaDiretorio),1,file);
+        EntradaDiretorio entrada;
+        memset(&entrada, 0, sizeof(EntradaDiretorio));
+        fwrite(&entrada,sizeof(EntradaDiretorio),1,file);
     }
 
 

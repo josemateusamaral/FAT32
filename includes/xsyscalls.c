@@ -1,11 +1,13 @@
+static FILE * disco = NULL;
+
 /*
     Esta chamada se sistema retorna os metadados necessarios para acessar o arquivo.
     Se o arquivo já existe, ela retorna uma lista com os clusters do arquivo e os dados da entrada de diretorio
     Se o arquivo não existe, ela cria uma nova entrada e retorna uma lista com o primeiro cluster onde o arquivo começara
 */
-struct XFILE xopen( char *filename, char *nomeDisco) {
-    
-    FILE *disco = fopen(nomeDisco,"r+b");
+XFILE xopen( char *filename ) {
+
+    //disco = fopen(nomeDisco,"r+w");
 
     //verificar se o arquivo existe ou deve ser criado
     int existe = arquivoExiste(disco,filename);
@@ -14,7 +16,7 @@ struct XFILE xopen( char *filename, char *nomeDisco) {
     if(existe){
 
         //como a arquivo já existe, temos que pegar a entrada dele
-        struct entradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(disco,filename);
+        EntradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(disco,filename);
         
         //criar array dos clusters do arquivo
         int* fat = fatToArray(disco);
@@ -30,8 +32,8 @@ struct XFILE xopen( char *filename, char *nomeDisco) {
         }
 
         // retornar a struct com os metadados do arquivo
-        struct XFILE file;
-        memset(&file, 0, sizeof(struct XFILE));
+        XFILE file;
+        memset(&file, 0, sizeof(XFILE));
         strncpy((char *)file.filename, filename, 11);
         file.tamanhoArquivo = entradaDoArquivo.fileSize;
         file.qnt_cluster = qnt_cluster;
@@ -48,26 +50,26 @@ struct XFILE xopen( char *filename, char *nomeDisco) {
         //como a arquivo não existe ainda, devemos criar uma entrada para ele com um cluster inicial
         int posicaoEntrada = (512 * 32) + 1024 + (acharEntradaVazia(disco) * 32);
         int clusterVazio = acharClusterVazio(disco,-1);
-        struct entradaDiretorio entrada;
-        memset(&entrada, 0, sizeof(struct entradaDiretorio));
+        EntradaDiretorio entrada;
+        memset(&entrada, 0, sizeof(EntradaDiretorio));
         strcpy(entrada.filename,filename);
         entrada.atributos = 0x20;
         entrada.startCluster = clusterVazio;
         entrada.fileSize = 0;
         fseek(disco, posicaoEntrada, SEEK_SET);
-        fwrite(&entrada,sizeof(struct entradaDiretorio),1,disco);
+        fwrite(&entrada,sizeof(EntradaDiretorio),1,disco);
 
         //marcar o cluster do arquivo
-        struct entradaFAT entradaDaFat;
-        memset(&entradaDaFat, 0, sizeof(struct entradaFAT));
+        EntradaFAT entradaDaFat;
+        memset(&entradaDaFat, 0, sizeof(EntradaFAT));
         entradaDaFat.ponteiro = 0xffffffff;
         int posicaoFatCluster = ( 512 * 32 ) + ( 4 * clusterVazio );
         fseek(disco, posicaoFatCluster, SEEK_SET);
-        fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,disco);
+        fwrite(&entradaDaFat,sizeof(EntradaFAT),1,disco);
 
         //retorar a struct com os metadados do novo arquivo
-        struct XFILE file;
-        memset(&file, 0, sizeof(struct XFILE));
+        XFILE file;
+        memset(&file, 0, sizeof(XFILE));
         int clusters[] = {clusterVazio};
         strncpy((char *)file.filename, filename, 11);
         file.disco = disco;
@@ -87,7 +89,7 @@ struct XFILE xopen( char *filename, char *nomeDisco) {
     Esta chamada de sistema serve para definir a posicao onde o ponteiro de leitura e escrita esta no arquivo
     Ela recebe SEEK_SET, SEEK_END e SEEK_CUR como parametros tambem igual as outras chamadas
 */
-void xseek(struct XFILE * file, int offset, int posicionador){
+void xseek(XFILE * file, int offset, int posicionador){
     
     //salvar a posicao atual para o caso dos parametros estourarem
     //OBS: neste contexto, estourar é quando o file.posicaoNoArquivo for menor que 0 ou maior que o tamanho do arquivo
@@ -118,7 +120,7 @@ void xseek(struct XFILE * file, int offset, int posicionador){
 /*
     Esta chamada de sistema realiza a leitura dos bytes de um arquivo para um array
 */
-int xread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, struct XFILE * file ){
+int xread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, XFILE * file ){
 
     int tamanhoCluster = 512;
     int tamanhoTotalDaLeitura = tamanhoTipo * tamanhoLeitura;
@@ -171,7 +173,7 @@ int xread( char * recebedor, int tamanhoTipo, int tamanhoLeitura, struct XFILE *
     return tamanhoTotalDaLeitura;
 }
 
-void xwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBytes, struct XFILE * file){
+void xwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBytes, XFILE * file){
 
     int tamanhoCluster = 512;
     int tamanhoTotalDaEscrita = quantidadeBytes * tamanhoTipo;
@@ -189,7 +191,7 @@ void xwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBy
         int posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * numeroClusterAtual ) + (tamanhoCluster - espacoNoCluster);
 
         //aumentar o tamanho do arquivo na entrada de diretorio
-        struct entradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(file->disco,file->filename);
+        EntradaDiretorio entradaDoArquivo = pegarEntradaDeDiretorio(file->disco,file->filename);
         int tamanhoAtualDoArquivo = entradaDoArquivo.fileSize;
         if(tamanhoAtualDoArquivo < file->posicaoNoArquivo + tamanhoTotalDaEscrita){
             entradaDoArquivo.fileSize = file->posicaoNoArquivo + tamanhoTotalDaEscrita;
@@ -197,7 +199,7 @@ void xwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBy
         int posicaoEntrada =  pegarPosicaoEntradaDeDiretorio(file->disco,file->filename);
         int posicaoParaNoDisco = (512 * 32) + 1024 + (posicaoEntrada*32);
         fseek(file->disco, posicaoParaNoDisco, SEEK_SET);
-        fwrite(&entradaDoArquivo,sizeof(struct entradaDiretorio),1,file->disco);
+        fwrite(&entradaDoArquivo,sizeof(EntradaDiretorio),1,file->disco);
         fflush(file->disco);
 
         //verificar se vai tudo em um cluster ou vai ter que dividir em 2
@@ -236,20 +238,20 @@ void xwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBy
                 file->qnt_cluster++;
 
                 //modificar ultimo cluster para apontar para o novo
-                struct entradaFAT entradaDaFat;
-                memset(&entradaDaFat, 0, sizeof(struct entradaFAT));
+                EntradaFAT entradaDaFat;
+                memset(&entradaDaFat, 0, sizeof(EntradaFAT));
                 entradaDaFat.ponteiro = clusterVazio;
                 int posicaoFatCluster = ( 512 * 32 ) + ( 4 * file->clusters[indexDoClusterNoClusterDoArquivo] );
                 fseek(file->disco, posicaoFatCluster, SEEK_SET);
-                fwrite(&entradaDaFat,sizeof(struct entradaFAT),1,file->disco);
+                fwrite(&entradaDaFat,sizeof(EntradaFAT),1,file->disco);
 
                 //colocar novo ultimo cluster
-                struct entradaFAT entradaDaFatNova;
-                memset(&entradaDaFatNova, 0, sizeof(struct entradaFAT));
+                EntradaFAT entradaDaFatNova;
+                memset(&entradaDaFatNova, 0, sizeof(EntradaFAT));
                 entradaDaFatNova.ponteiro = 0xffffffff;
                 int posicaoFatClusterNovo = ( 512 * 32 ) + ( 4 * clusterVazio );
                 fseek(file->disco, posicaoFatClusterNovo, SEEK_SET);
-                fwrite(&entradaDaFatNova,sizeof(struct entradaFAT),1,file->disco);
+                fwrite(&entradaDaFatNova,sizeof(EntradaFAT),1,file->disco);
 
                 //escrever segunda parte no ultimo cluster
                 posicaoClusterInicio = ( 512 * 32 ) + 1024 + ( tamanhoCluster * clusterVazio );
@@ -286,9 +288,8 @@ void xwrite(unsigned char * bytesParaEscrever, int tamanhoTipo, int quantidadeBy
 /* 
     acabar com todas as coisas relacionadas ao arquivo
 */
-void xclose(struct XFILE * file){
+void xclose(XFILE * file){
     fflush(file->disco);
-    fclose(file->disco);
 }
 
 
@@ -301,9 +302,8 @@ void xremove( char* nomeArquivo, char* nomeDisco ){
 
     // acessar a tabela do diretorio root
     int inicioEntradas = ( 32 * 512 ) + 1024;
-    FILE *disco = fopen(nomeDisco,"r+b");
-    struct entradaDiretorio entradaLimpa;
-    memset(&entradaLimpa, 0, sizeof(struct entradaDiretorio));
+    EntradaDiretorio entradaLimpa;
+    memset(&entradaLimpa, 0, sizeof(EntradaDiretorio));
 
     /* 
       criar struct de entrada apartir das entradas da root
@@ -316,8 +316,8 @@ void xremove( char* nomeArquivo, char* nomeDisco ){
     while( quantidadeEntradas <= 16 ){
 
         fseek(disco, inicioEntradas, SEEK_SET);
-        struct entradaDiretorio entradaTeste;
-        fread(&entradaTeste, sizeof(struct entradaDiretorio), 1, disco);
+        EntradaDiretorio entradaTeste;
+        fread(&entradaTeste, sizeof(EntradaDiretorio), 1, disco);
 
         // Diminuir o tamanho do nome do arquivo para 11
         char nome[11];
@@ -330,7 +330,7 @@ void xremove( char* nomeArquivo, char* nomeDisco ){
             proximoCluster = entradaTeste.startCluster;
             tamanhoArquivo = entradaTeste.fileSize;
             fseek(disco, inicioEntradas, SEEK_SET);
-            fwrite(&entradaLimpa,sizeof(struct entradaDiretorio),1,disco);
+            fwrite(&entradaLimpa,sizeof(EntradaDiretorio),1,disco);
             break;
         }
         else{
@@ -340,8 +340,8 @@ void xremove( char* nomeArquivo, char* nomeDisco ){
     }
 
     // limpar todas as entradas FAT referentes aos clusters desse arquivo
-    struct entradaFAT entradaLimpaFAT;
-    memset(&entradaLimpaFAT, 0, sizeof(struct entradaFAT));
+    EntradaFAT entradaLimpaFAT;
+    memset(&entradaLimpaFAT, 0, sizeof(EntradaFAT));
 
     int qnt_cluster = tamanhoArquivo / 512;
     if(tamanhoArquivo % 512){
@@ -350,14 +350,12 @@ void xremove( char* nomeArquivo, char* nomeDisco ){
     for (int i = 0; i < qnt_cluster; i++){
         int posicaoEntradaCluster = ( 512 * 32 ) + ( 4 * proximoCluster );
         fseek(disco, posicaoEntradaCluster, SEEK_SET);
-        struct entradaFAT testeEntrada;
-        fread(&testeEntrada, sizeof(struct entradaFAT), 1, disco);
+        EntradaFAT testeEntrada;
+        fread(&testeEntrada, sizeof(EntradaFAT), 1, disco);
         fseek(disco, posicaoEntradaCluster, SEEK_SET);
         proximoCluster = testeEntrada.ponteiro;
-        fwrite(&entradaLimpaFAT,sizeof(struct entradaFAT),1,disco);
+        fwrite(&entradaLimpaFAT,sizeof(EntradaFAT),1,disco);
     }
-
-    fclose(disco);
 
 }
 
@@ -391,5 +389,26 @@ void xrmdir( char * path ){
     montar um disco
 */
 void xmount( char * path ){
+    if(disco == NULL){
+        printf("Montando disco %s",path);
+        disco = fopen(path,"r+w");
+    }else{
+        printf("Já existe um disco montado\n");
+    }
+}
 
+
+/*
+    desmontar disco
+*/
+void xunmount( char * path ){
+    if(disco != NULL){
+        printf("Desmontando disco\n");
+        fflush(disco);
+        fclose(disco);
+        disco = NULL;
+    }else{
+        printf("Desmontando disco\n");
+    }
+    
 }
