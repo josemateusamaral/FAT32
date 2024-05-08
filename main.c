@@ -3,11 +3,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
-#include "includes/estruturas.c"
-#include "includes/utils.c"
+#include "includes/xtypes.c"
 #include "includes/xsyscalls.c"
 #include "includes/terminal.c"
-#include "includes/gerador.c"
+#include "includes/xsystools.c"
 
 
 
