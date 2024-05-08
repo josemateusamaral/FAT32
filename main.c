@@ -97,15 +97,6 @@ int main() {
     fclose(arquivoSaida);
     xclose(&fileDentro);
 
-    
-    
-    xmkdir("pasta");
-    
-    terminal__ls();
-
-    xchdir("pasta");
-    xmkdir("mais");
-
     terminal__ls();
 
     return 0;
