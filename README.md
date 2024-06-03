@@ -2,7 +2,7 @@
 Este projeto consiste em um driver para criar e manupular discos FAT32.<br>
 A versão atual consegue criar uma imagem de disco FAT32 e manipula-la podendo criar e ler arquivos de dentro da imagem.<br>
 Ainda não foi implementado um terminal interativo para podermos manipular e visualizar a imagem.<br>
-
+<br><br>
 Para testar o programara é só rodar o comando <b>sh run.sh no Linux</b> ou <b>./run_Windows.bat no Windows</b> que então o programa será compilado e rodado se tiver conseguido compilar corretamente. <b>
 O compilador sendo usado no Windows e no Linux é o <b>GCC</b>.
 
